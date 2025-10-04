@@ -20,13 +20,16 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "edgeToEdgeEnabled": true
+      "edgeToEdgeEnabled": true,
+      "package": "com.vinhnguyenhehe.FA25_MB_OnePiece"
     },
     "web": {
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
-      "expo-font"
-    ]
+      "expo-font",
+      "expo-web-browser"
+    ],
+    "scheme": "fa25mobile"
   }
 }
