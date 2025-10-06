@@ -1,6 +1,5 @@
 import React from "react";
 import {
-  SafeAreaView,
   View,
   Text,
   TextInput,
@@ -9,6 +8,8 @@ import {
   Image,
 } from "react-native";
 import Header from "../components/Header"; 
+import { SafeAreaView } from "react-native-safe-area-context";
+
 const services = [
   { title: "Marine Freight", icon: require("../assets/marine.jpg") },
   { title: "Ocean Freight", icon: require("../assets/ocean.jpg") },
