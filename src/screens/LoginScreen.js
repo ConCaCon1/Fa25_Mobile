@@ -1,68 +1,101 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import {
   View,
   Text,
   TextInput,
   TouchableOpacity,
   StyleSheet,
-  ImageBackground,
   Linking,
   Alert,
+  StatusBar, 
 } from "react-native";
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView } from "react-native-safe-area-context";
+import { AntDesign } from "@expo/vector-icons";
 
 const LoginScreen = ({ navigation }) => {
   const [vesselRegNo, setVesselRegNo] = useState("");
   const [password, setPassword] = useState("");
 
-  const handleLogin = () => {
-    console.log("Login:", vesselRegNo, password);
-    navigation.navigate("Home");
+  const handleLogin = async () => {
+    try {
+      const response = await fetch(
+        "https://marine-bridge.orbitmap.vn/api/v1/auth/login",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            usernameOrEmail: vesselRegNo,
+            password: password,
+          }),
+        }
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+        console.log("Login success:", data);
+        navigation.navigate("Home");
+      } else {
+        const errorData = await response.json();
+        Alert.alert("Login Failed", errorData.message || "Invalid credentials");
+      }
+    } catch (error) {
+      console.error("Login error:", error);
+      Alert.alert("Error", error.message);
+    }
   };
 
   const handleGoogleSignIn = async () => {
-    console.log('🚀 BẮT ĐẦU Google Sign-In...');
-    
-    const clientIdWeb = '1024635096637-k1ovpsiijssgic039v32o728bjjhhonk.apps.googleusercontent.com';
-    const redirectUri = 'https://auth.expo.io/@anonymous/FA25_MB_OnePiece';
-    const scope = 'openid profile email';
-    const state = 'random_state_' + Math.random().toString(36).substring(7);
-    
-    const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientIdWeb}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=${encodeURIComponent(scope)}&state=${state}&access_type=offline`;
-    
-    console.log('🌐 Auth URL:', authUrl);
-    
+    console.log("🚀 BẮT ĐẦU Google Sign-In...");
+
+    const clientIdWeb =
+      "1024635096637-k1ovpsiijssgic039v32o728bjjhhonk.apps.googleusercontent.com";
+    const redirectUri = "https://auth.expo.io/@anonymous/FA25_MB_OnePiece";
+    const scope = "openid profile email";
+    const state = "random_state_" + Math.random().toString(36).substring(7);
+
+    const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientIdWeb}&redirect_uri=${encodeURIComponent(
+      redirectUri
+    )}&response_type=code&scope=${encodeURIComponent(
+      scope
+    )}&state=${state}&access_type=offline`;
+
+    console.log("🌐 Auth URL:", authUrl);
+
     try {
       const canOpen = await Linking.canOpenURL(authUrl);
-      console.log('✅ Can open:', canOpen);
-      
+      console.log("✅ Can open:", canOpen);
+
       if (canOpen) {
         await Linking.openURL(authUrl);
-        console.log('✅ Browser opened!');
-        
+        console.log("✅ Browser opened!");
+
         Alert.alert(
-          'Google Sign-In',
-          'Browser opened! Copy URL after login and paste here.',
+          "Google Sign-In",
+          "Browser opened! Copy URL after login and paste here.",
           [
             {
-              text: 'Paste URL',
+              text: "Paste URL",
               onPress: () => {
-                Alert.prompt('Paste URL', 'Paste the redirect URL:', (url) => {
-                  if (url && url.includes('code=')) {
-                    const code = new URLSearchParams(url.split('?')[1]).get('code');
-                    console.log('');
-                    console.log('🎯🎯🎯 THÔNG TIN CHO BACKEND 🎯🎯🎯');
-                    console.log('📋 Authorization Code:', code);
-                    console.log('🔧 Client ID Web:', clientIdWeb);
-                    console.log('🔗 Redirect URI:', redirectUri);
-                    console.log('');
-                    console.log('📡 DATA GỬI CHO BE:');
+                Alert.prompt("Paste URL", "Paste the redirect URL:", (url) => {
+                  if (url && url.includes("code=")) {
+                    const code = new URLSearchParams(url.split("?")[1]).get(
+                      "code"
+                    );
+                    console.log("");
+                    console.log("🎯🎯🎯 THÔNG TIN CHO BACKEND 🎯🎯🎯");
+                    console.log("📋 Authorization Code:", code);
+                    console.log("🔧 Client ID Web:", clientIdWeb);
+                    console.log("🔗 Redirect URI:", redirectUri);
+                    console.log("");
+                    console.log("📡 DATA GỬI CHO BE:");
                     console.log(`{
   "code": "${code}",
   "isAndroid": false
 }`);
-                    console.log('');
-                    console.log('🔧 BE SẼ SỬ DỤNG:');
+                    console.log("");
+                    console.log("🔧 BE SẼ SỬ DỤNG:");
                     console.log(`{
   "code": "${code}",
   "client_id": "${clientIdWeb}",
@@ -70,192 +103,202 @@ const LoginScreen = ({ navigation }) => {
   "redirect_uri": "${redirectUri}",
   "grant_type": "authorization_code"
 }`);
-                    console.log('🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯');
-                    
-                    Alert.alert('Success!', `Code: ${code}`);
+                    console.log("🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯");
+
+                    Alert.alert("Success!", `Code: ${code}`);
                     navigation.navigate("Home");
                   } else {
-                    Alert.alert('Error', 'URL không chứa code');
+                    Alert.alert("Error", "URL không chứa code");
                   }
                 });
-              }
-            }
+              },
+            },
           ]
         );
       } else {
-        Alert.alert('Error', 'Cannot open browser');
+        Alert.alert("Error", "Cannot open browser");
       }
     } catch (error) {
-      console.error('Error:', error);
-      Alert.alert('Error', error.message);
+      console.error("Error:", error);
+      Alert.alert("Error", error.message);
     }
   };
 
   return (
-    <ImageBackground
-      source={{ uri: "https://i.pinimg.com/736x/a7/d8/01/a7d801430b69f32d0622cb4cf7b9f782.jpg" }} 
-      style={styles.background}
-      blurRadius={3} 
-    >
-      <SafeAreaView style={styles.container}>
-        <Text style={styles.title}>Maritime Management</Text>
-        <Text style={styles.subtitle}>
-          Making a difference in Ocean and Maritime 
-        </Text>
+    <SafeAreaView style={styles.container}>
+      <StatusBar barStyle="dark-content" />
+      <View style={styles.content}>
+        <View style={styles.header}>
+            <Text style={styles.title}>Welcome to MaritimeHub</Text>
+            <Text style={styles.subtitle}>Connect Suppliers and Shipyards</Text>
+        </View>
 
-        <View style={styles.card}>
-          <Text style={styles.loginTitle}>Login</Text>
-
-          <TextInput
+        <View style={styles.form}>
+            <TextInput
             style={styles.input}
-            placeholder="Username"
+            placeholder="Username or Email"
+            placeholderTextColor="#8A9BAD"
             value={vesselRegNo}
             onChangeText={setVesselRegNo}
-          />
+            keyboardType="email-address"
+            autoCapitalize="none"
+            />
 
-          <TextInput
+            <TextInput
             style={styles.input}
             placeholder="Password"
+            placeholderTextColor="#8A9BAD"
             secureTextEntry
             value={password}
             onChangeText={setPassword}
-          />
+            />
 
-          <TouchableOpacity style={styles.button} onPress={handleLogin}>
+            <TouchableOpacity style={styles.button} onPress={handleLogin}>
             <Text style={styles.buttonText}>Login</Text>
-          </TouchableOpacity>
+            </TouchableOpacity>
 
-          <View style={styles.divider}>
+            <View style={styles.divider}>
             <View style={styles.dividerLine} />
             <Text style={styles.dividerText}>OR</Text>
             <View style={styles.dividerLine} />
-          </View>
+            </View>
 
-          <TouchableOpacity 
-            style={styles.googleButton} 
+            <TouchableOpacity
+            style={styles.googleButton}
             onPress={() => {
-              console.log('🔥 Google Sign-In button CLICKED!');
-              handleGoogleSignIn();
+                console.log("🔥 Google Sign-In button CLICKED!");
+                handleGoogleSignIn();
             }}
-          >
+            >
+              <AntDesign name="google" size={20} color="" style={styles.googleIcon} />
             <Text style={styles.googleButtonText}>Sign in with Google</Text>
-          </TouchableOpacity>
-
-          <View style={styles.registerContainer}>
-            <Text style={{ color: "#555" }}>Don't have an account?</Text>
-            <TouchableOpacity onPress={() => navigation.navigate("Register")}>
-              <Text style={styles.registerLink}> Register</Text>
             </TouchableOpacity>
-          </View>
+        </View>
+        
+        <View style={styles.footer}>
+            <Text style={styles.footerText}>Don't have an account?</Text>
+            <TouchableOpacity onPress={() => navigation.navigate("Register")}>
+                <Text style={styles.registerLink}> Register now</Text>
+            </TouchableOpacity>
         </View>
 
-        <Text style={styles.footer}>Powered by asm®</Text>
-      </SafeAreaView>
-    </ImageBackground>
+      </View>
+    </SafeAreaView>
   );
 };
 
 export default LoginScreen;
 
 const styles = StyleSheet.create({
-  background: {
-    flex: 1,
-    resizeMode: "cover",
-  },
   container: {
     flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    padding: 20,
+    backgroundColor: '#F0F4F8', 
+  },
+  content: {
+    flex: 1,
+    justifyContent: 'center',
+    paddingHorizontal: 24,
+  },
+  header: {
+    alignItems: 'center',
+    marginBottom: 40,
+  },
+  logo: {
+      width: 80,
+      height: 80,
+      marginBottom: 20,
   },
   title: {
-    fontSize: 22,
-    fontWeight: "bold",
-    color: "#fff",
-    textAlign: "center",
-    marginBottom: 5,
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: '#003d66', 
+    textAlign: 'center',
   },
   subtitle: {
-    fontSize: 14,
-    color: "#e0e0e0",
-    textAlign: "center",
-    marginBottom: 20,
+    fontSize: 16,
+    color: '#5A6A7D', 
+    textAlign: 'center',
+    marginTop: 8,
   },
-  card: {
-    backgroundColor: "rgba(255,255,255,0.9)", 
-    width: "100%",
-    borderRadius: 12,
-    padding: 20,
-    elevation: 4,
-  },
-  loginTitle: {
-    fontSize: 18,
-    fontWeight: "bold",
-    marginBottom: 15,
-    color: "#333",
+  form: {
+    width: '100%',
   },
   input: {
+    backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: "#ccc",
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 15,
-    backgroundColor: "#fff",
+    borderColor: '#E2E8F0',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    height: 52,
+    fontSize: 16,
+    color: '#1C2A3A',
+    marginBottom: 16,
   },
   button: {
-    backgroundColor: "#003d66",
-    padding: 14,
-    borderRadius: 8,
-    alignItems: "center",
-    marginBottom: 10,
+    backgroundColor: '#003d66', 
+    height: 52,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    elevation: 3, 
+    shadowColor: '#003d66', 
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 5,
   },
   buttonText: {
-    color: "#fff",
-    fontWeight: "bold",
+    color: '#FFFFFF',
+    fontWeight: 'bold',
     fontSize: 16,
   },
-  registerContainer: {
-    flexDirection: "row",
-    justifyContent: "center",
-    marginTop: 10,
-  },
-  registerLink: {
-    color: "#003d66",
-    fontWeight: "bold",
-  },
   divider: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginVertical: 15,
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: 24,
   },
   dividerLine: {
     flex: 1,
     height: 1,
-    backgroundColor: "#ccc",
+    backgroundColor: '#CBD5E0',
   },
   dividerText: {
-    marginHorizontal: 10,
-    color: "#666",
+    marginHorizontal: 12,
+    color: '#8A9BAD',
     fontSize: 12,
+    fontWeight: '500',
   },
   googleButton: {
-    backgroundColor: "#4285f4",
-    width: "100%",
-    height: 48,
-    marginBottom: 15,
-    borderRadius: 8,
-    justifyContent: "center",
-    alignItems: "center",
-    flexDirection: "row",
+    backgroundColor: '#FFFFFF',
+    borderColor: '#CBD5E0',
+    borderWidth: 1,
+    height: 52,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    flexDirection: 'row',
+  },
+  googleIcon: { 
+    width: 20,
+    height: 20,
+    marginRight: 12,
   },
   googleButtonText: {
-    color: "#fff",
-    fontWeight: "bold",
+    color: '#334155',
+    fontWeight: '600',
     fontSize: 16,
   },
   footer: {
-    marginTop: 20,
-    color: "#fff",
-    fontSize: 12,
+    flexDirection: "row",
+    justifyContent: "center",
+    marginTop: 24,
+  },
+  footerText: {
+    color: '#5A6A7D',
+    fontSize: 14,
+  },
+  registerLink: {
+    color: '#003d66', 
+    fontWeight: 'bold',
+    fontSize: 14,
   },
 });
