@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ActivityIndicator } from "react-native";
-
+import { API_BASE_URL } from '@env';
 const OTPScreen = ({ route, navigation }) => {
   const { fullName, username, email, password, address, phoneNumber, avatarUri } = route.params;
   const [otp, setOtp] = useState("");
@@ -30,7 +30,7 @@ const OTPScreen = ({ route, navigation }) => {
     }
 
     try {
-      const res = await fetch("https://marine-bridge.orbitmap.vn/api/v1/auth/register", {
+      const res = await fetch(`${API_BASE_URL}/auth/register`, {
         method: "POST",
         body: formData,
       });

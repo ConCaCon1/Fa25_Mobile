@@ -17,7 +17,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import * as ImagePicker from "expo-image-picker";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-
+import { API_BASE_URL } from '@env';
 const RegisterScreen = ({ navigation }) => {
   const [avatarUri, setAvatarUri] = useState(null);
   const [fullName, setFullName] = useState("");
@@ -109,7 +109,7 @@ const RegisterScreen = ({ navigation }) => {
 
     try {
       const response = await fetch(
-        "https://marine-bridge.orbitmap.vn/api/v1/auth/otp",
+        `${API_BASE_URL}/auth/otp`,
         {
           method: "POST",
           headers: {

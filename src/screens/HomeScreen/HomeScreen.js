@@ -12,7 +12,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import BottomNavBar from "../components/BottomNavBar";
+import BottomNavBar from "../../components/BottomNavBar";
 const Header = ({ title, user }) => (
   <View style={styles.header}>
     <View style={styles.headerLeft}>
@@ -26,10 +26,10 @@ const Header = ({ title, user }) => (
 );
 
 const services = [
-  { title: "Marine Freight", icon: require("../assets/marine.jpg") },
-  { title: "Ocean Freight", icon: require("../assets/ocean.jpg") },
-  { title: "Land Transport", icon: require("../assets/land.png") },
-  { title: "Cargo Storage", icon: require("../assets/cargo.jpg") },
+  { title: "Marine Freight", icon: require("../../assets/marine.jpg") },
+  { title: "Ocean Freight", icon: require("../../assets/ocean.jpg") },
+  { title: "Land Transport", icon: require("../../assets/land.png") },
+  { title: "Cargo Storage", icon: require("../../assets/cargo.jpg") },
 ];
 
 const HomeScreen = ({navigation}) => {

@@ -1,10 +1,10 @@
 import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
-import HomeScreen from "../screens/HomeScreen";
-import RegisterScreen from "../screens/RegisterScreen";
-import LoginScreen from "../screens/LoginScreen";
-import OTPScreen from "../screens/OTPScreen";
-import GoogleTestScreen from "../screens/GoogleTestScreen";
+import HomeScreen from "../screens/HomeScreen/HomeScreen";
+import RegisterScreen from "../screens/RegisterScreen/RegisterScreen";
+import LoginScreen from "../screens/LoginScreen/LoginScreen";
+import OTPScreen from "../screens/OTPScreen/OTPScreen";
+import GoogleTestScreen from "../screens/GoogleTestScreen/GoogleTestScreen";
 
 
 const Stack = createNativeStackNavigator();
