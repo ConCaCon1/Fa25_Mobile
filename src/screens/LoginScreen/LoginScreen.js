@@ -13,9 +13,9 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { AntDesign } from "@expo/vector-icons";
 import * as AuthSession from 'expo-auth-session';
 import * as WebBrowser from 'expo-web-browser';
-
+import { API_BASE_URL } from '@env';
 WebBrowser.maybeCompleteAuthSession();
-
+console.log("🔧 Loaded API_BASE_URL:", API_BASE_URL);
 const LoginScreen = ({ navigation }) => {
   const [vesselRegNo, setVesselRegNo] = useState("");
   const [password, setPassword] = useState("");
@@ -23,7 +23,7 @@ const LoginScreen = ({ navigation }) => {
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
 
   // API Base URL
-  const API_BASE_URL = "https://marine-bridge.orbitmap.vn/api/v1";
+  // const API_BASE_URL = "https://marine-bridge.orbitmap.vn/api/v1";
   
   // Google OAuth Config
   const GOOGLE_CLIENT_ID = "1024635096637-k1ovpsiijssgic039v32o728bjjhhonk.apps.googleusercontent.com";
