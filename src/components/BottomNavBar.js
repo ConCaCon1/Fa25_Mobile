@@ -4,7 +4,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 
 const navItems = [
   { name: 'Home', icon: 'home-variant', target: 'Home' },
-  { name: 'History', icon: 'history', target: 'History' },
+  { name: 'Map', icon: 'history', target: 'MapScreen' },
   { name: 'Account', icon: 'account-circle-outline', target: 'Account' },
 ];
 
