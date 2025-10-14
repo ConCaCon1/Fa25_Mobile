@@ -6,6 +6,7 @@ import LoginScreen from "../screens/LoginScreen/LoginScreen";
 import OTPScreen from "../screens/OTPScreen/OTPScreen";
 import GoogleTestScreen from "../screens/GoogleTestScreen/GoogleTestScreen";
 import MapScreen from "../screens/MapScreen/MapScreen";
+import AccountScreen from "../screens/AccountScreen/AccountScreen";
 
 
 const Stack = createNativeStackNavigator();
@@ -25,7 +26,7 @@ export default function AppNavigator() {
         <Stack.Screen name="OTPScreen" component={OTPScreen} />
         <Stack.Screen name="MapScreen" component={MapScreen} />
         <Stack.Screen name="GoogleTest" component={GoogleTestScreen} />
-        
+        <Stack.Screen name="Account" component={AccountScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );
