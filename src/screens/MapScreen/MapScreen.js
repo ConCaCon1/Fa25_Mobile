@@ -1,4 +1,4 @@
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useRef, useState } from 'react';
 import { View, Alert, TextInput, Button } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { WebView } from 'react-native-webview';
@@ -9,11 +9,9 @@ import BottomNavBar from '../../components/BottomNavBar';
 const MapScreen = ({ navigation }) => {
   const webviewRef = useRef(null);
   const [query, setQuery] = useState('');
-  const [mapReady, setMapReady] = useState(false);
 
+  // Khi bản đồ load xong => lấy vị trí hiện tại và hiển thị marker đỏ
   const handleMapLoaded = async () => {
-    setMapReady(true);
-
     let { status } = await Location.requestForegroundPermissionsAsync();
     if (status !== 'granted') {
       Alert.alert('Permission denied', 'Không thể truy cập vị trí của bạn.');
@@ -23,7 +21,6 @@ const MapScreen = ({ navigation }) => {
     const location = await Location.getCurrentPositionAsync({
       accuracy: Location.Accuracy.High,
     });
-
     const { latitude, longitude } = location.coords;
 
     const js = `
@@ -39,10 +36,9 @@ const MapScreen = ({ navigation }) => {
     webviewRef.current.injectJavaScript(js);
   };
 
-  // Khi người dùng tìm kiếm vị trí mới
+  // Khi người dùng bấm tìm kiếm vị trí mới (hiển thị route)
   const handleSearch = () => {
     if (!query) return;
-
     const js = `
       (async function() {
         try {
@@ -55,17 +51,13 @@ const MapScreen = ({ navigation }) => {
             if(detailData.result){
               const loc = detailData.result.geometry.location;
 
-              // Nếu đã có marker tìm kiếm trước đó thì xóa
               if(window.searchMarker) window.searchMarker.remove();
-
-              // Thêm marker xanh cho vị trí tìm được
               window.searchMarker = new maplibregl.Marker({ color: 'blue' })
                 .setLngLat([loc.lng, loc.lat])
                 .addTo(map);
 
               map.flyTo({ center: [loc.lng, loc.lat], zoom: 14 });
 
-              // Vẽ route giữa user và điểm tìm
               if(window.userLocation){
                 const routeRes = await fetch(
                   "https://rsapi.goong.io/Direction?origin=" +
@@ -78,7 +70,6 @@ const MapScreen = ({ navigation }) => {
                 if(routeData && routeData.routes && routeData.routes.length > 0){
                   const points = routeData.routes[0].overview_polyline.points;
 
-                  // Giải mã polyline sang GeoJSON
                   function decodePolyline(str) {
                     let index = 0, lat = 0, lng = 0, coordinates = [];
                     while (index < str.length) {
@@ -109,40 +100,27 @@ const MapScreen = ({ navigation }) => {
                   if(map.getSource('routeLine')){
                     map.getSource('routeLine').setData({
                       type: 'FeatureCollection',
-                      features: [{
-                        type: 'Feature',
-                        geometry: { type: 'LineString', coordinates: coords }
-                      }]
+                      features: [{ type: 'Feature', geometry: { type: 'LineString', coordinates: coords } }]
                     });
                   } else {
                     map.addSource('routeLine', {
                       type: 'geojson',
                       data: {
                         type: 'FeatureCollection',
-                        features: [{
-                          type: 'Feature',
-                          geometry: { type: 'LineString', coordinates: coords }
-                        }]
+                        features: [{ type: 'Feature', geometry: { type: 'LineString', coordinates: coords } }]
                       }
                     });
                     map.addLayer({
                       id: 'routeLine',
                       type: 'line',
                       source: 'routeLine',
-                      paint: {
-                        'line-color': '#007AFF',
-                        'line-width': 5
-                      }
+                      paint: { 'line-color': '#007AFF', 'line-width': 5 }
                     });
                   }
 
-                  // Hiển thị khoảng cách
                   const distanceKm = routeData.routes[0].legs[0].distance.text;
                   const duration = routeData.routes[0].legs[0].duration.text;
-
                   window.ReactNativeWebView.postMessage(JSON.stringify({
-                    lng: loc.lng,
-                    lat: loc.lat,
                     address: place.description,
                     distance: distanceKm,
                     duration: duration
@@ -157,22 +135,19 @@ const MapScreen = ({ navigation }) => {
     webviewRef.current.injectJavaScript(js);
   };
 
+  // Nhận dữ liệu từ WebView
   const handleMessage = (event) => {
     try {
       const data = JSON.parse(event.nativeEvent.data);
       if (data.distance) {
-        Alert.alert(
-          'Thông tin vị trí',
-          `Từ vị trí của bạn đến:\n${data.address}\n\n📍Khoảng cách: ${data.distance}\n⏱️ Thời gian: ${data.duration}`
-        );
-      } else {
-        Alert.alert('Vị trí', `Lng: ${data.lng}, Lat: ${data.lat}\n${data.address || ''}`);
+        Alert.alert('Thông tin vị trí', `📍 ${data.address}\n\nKhoảng cách: ${data.distance}\nThời gian: ${data.duration}`);
+      } else if (data.lat && data.lng) {
+        Alert.alert('Vị trí', `Kinh độ: ${data.lng}\nVĩ độ: ${data.lat}\n${data.address || ''}`);
       }
-    } catch (e) {
-      console.warn('Invalid message', e);
-    }
+    } catch {}
   };
 
+  // Nội dung HTML của bản đồ
   const html = `
     <!DOCTYPE html>
     <html>
@@ -196,8 +171,26 @@ const MapScreen = ({ navigation }) => {
             zoom: 12
           });
           map.addControl(new maplibregl.NavigationControl());
-          document.addEventListener("DOMContentLoaded", () => {
-            window.ReactNativeWebView.postMessage(JSON.stringify({ ready: true }));
+
+          // Khi người dùng click vào bản đồ => hiển thị marker xanh + thông tin
+          map.on('click', async (e) => {
+            const lng = e.lngLat.lng;
+            const lat = e.lngLat.lat;
+
+            if(window.searchMarker) window.searchMarker.remove();
+            window.searchMarker = new maplibregl.Marker({ color: 'blue' })
+              .setLngLat([lng, lat])
+              .addTo(map);
+
+            // Gọi API reverse geocoding để lấy địa chỉ
+            try {
+              const res = await fetch("https://rsapi.goong.io/Geocode?latlng=" + lat + "," + lng + "&api_key=${VITE_GOONG_API_KEY}");
+              const data = await res.json();
+              const address = data.results && data.results.length > 0 ? data.results[0].formatted_address : '';
+              window.ReactNativeWebView.postMessage(JSON.stringify({ lat, lng, address }));
+            } catch {
+              window.ReactNativeWebView.postMessage(JSON.stringify({ lat, lng }));
+            }
           });
         </script>
       </body>
@@ -230,8 +223,8 @@ const MapScreen = ({ navigation }) => {
         onLoadEnd={handleMapLoaded}
         source={{ html }}
         onMessage={handleMessage}
-        javaScriptEnabled={true}
-        domStorageEnabled={true}
+        javaScriptEnabled
+        domStorageEnabled
         style={{ flex: 1 }}
       />
 
