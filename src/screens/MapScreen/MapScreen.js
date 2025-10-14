@@ -10,7 +10,6 @@ const MapScreen = ({ navigation }) => {
   const webviewRef = useRef(null);
   const [query, setQuery] = useState('');
 
-  // Khi bản đồ load xong => lấy vị trí hiện tại và hiển thị marker đỏ
   const handleMapLoaded = async () => {
     let { status } = await Location.requestForegroundPermissionsAsync();
     if (status !== 'granted') {
@@ -36,7 +35,6 @@ const MapScreen = ({ navigation }) => {
     webviewRef.current.injectJavaScript(js);
   };
 
-  // Khi người dùng bấm tìm kiếm vị trí mới (hiển thị route)
   const handleSearch = () => {
     if (!query) return;
     const js = `
@@ -135,7 +133,6 @@ const MapScreen = ({ navigation }) => {
     webviewRef.current.injectJavaScript(js);
   };
 
-  // Nhận dữ liệu từ WebView
   const handleMessage = (event) => {
     try {
       const data = JSON.parse(event.nativeEvent.data);
@@ -147,7 +144,6 @@ const MapScreen = ({ navigation }) => {
     } catch {}
   };
 
-  // Nội dung HTML của bản đồ
   const html = `
     <!DOCTYPE html>
     <html>

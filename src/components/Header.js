@@ -1,62 +1,61 @@
-import { View, Text, StyleSheet, TouchableOpacity, Image } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
+import React from 'react';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 
-const Header = ({ title, onProfilePress }) => {
+const Header = ({ title, user, navigation }) => {
   return (
-    <View style={styles.container}>
-      <TouchableOpacity style={styles.leftIcon}>
-        <Ionicons name="menu" size={24} color="#fff" />
-      </TouchableOpacity>
-
-      <Text style={styles.title}>{title}</Text>
-
-      <TouchableOpacity style={styles.profileCircle} onPress={onProfilePress}>
-        <Text style={styles.profileText}>S</Text>
+    <View style={styles.header}>
+      <View style={styles.headerLeft}>
+        <View style={styles.profileCircle}>
+          <Text style={styles.profileInitial}>{user}</Text>
+        </View>
+        <Text style={styles.headerTitle}>{title}</Text>
+      </View>
+      <TouchableOpacity 
+        style={styles.notificationIcon} 
+        onPress={() => navigation.navigate("Notification")}
+      >
+        <MaterialCommunityIcons name="bell-outline" size={24} color="#334155" />
       </TouchableOpacity>
     </View>
   );
 };
 
-export default Header;
-
 const styles = StyleSheet.create({
-  container: {
-    height: 60,
-    backgroundColor: "#121212",
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: "#333",
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 15,
+    backgroundColor: '#F0F4F8', 
   },
-  leftIcon: {
-    padding: 8,
-  },
-  icon: {
-    width: 24,
-    height: 24,
-    resizeMode: "contain",
-    tintColor: "#fff",
-  },
-
-  title: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: "#fff",
+  headerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   profileCircle: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: "#005f99",
-    justifyContent: "center",
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: "#fff",
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#003d66',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
   },
-  profileText: {
-    color: "#fff",
-    fontWeight: "bold",
+  profileInitial: {
+    color: '#FFFFFF',
+    fontWeight: 'bold',
+    fontSize: 18,
+  },
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#1C2A3A',
+  },
+  notificationIcon: {
+    padding: 5,
   },
 });
+
+export default Header;
