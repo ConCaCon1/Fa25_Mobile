@@ -7,6 +7,8 @@ import OTPScreen from "../screens/OTPScreen/OTPScreen";
 import GoogleTestScreen from "../screens/GoogleTestScreen/GoogleTestScreen";
 import MapScreen from "../screens/MapScreen/MapScreen";
 import AccountScreen from "../screens/AccountScreen/AccountScreen";
+import HistoryScreen from "../screens/HistoryScreen.js/HistoryScreen";
+import NotificationScreen from "../screens/NotificationScreen/NotificationScreen";
 
 
 const Stack = createNativeStackNavigator();
@@ -27,6 +29,8 @@ export default function AppNavigator() {
         <Stack.Screen name="MapScreen" component={MapScreen} />
         <Stack.Screen name="GoogleTest" component={GoogleTestScreen} />
         <Stack.Screen name="Account" component={AccountScreen} />
+        <Stack.Screen name="History" component={HistoryScreen} />
+        <Stack.Screen name="Notification" component={NotificationScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );

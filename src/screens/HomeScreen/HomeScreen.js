@@ -13,17 +13,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import BottomNavBar from "../../components/BottomNavBar";
-const Header = ({ title, user }) => (
-  <View style={styles.header}>
-    <View style={styles.headerLeft}>
-      <View style={styles.profileCircle}><Text style={styles.profileInitial}>{user}</Text></View>
-      <Text style={styles.headerTitle}>{title}</Text>
-    </View>
-    <TouchableOpacity>
-      <MaterialCommunityIcons name="bell-outline" size={24} color="#334155" />
-    </TouchableOpacity>
-  </View>
-);
+import Header from "../../components/Header"; 
 
 const services = [
   { title: "Marine Freight", icon: require("../../assets/marine.jpg") },
@@ -38,7 +28,7 @@ const HomeScreen = ({navigation}) => {
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" />
-      <Header title="MaritimeHub" user="S" />
+      <Header title="MaritimeHub" user="S" navigation={navigation} />
       
       <ScrollView showsVerticalScrollIndicator={false}>
         <View style={styles.content}>
@@ -73,7 +63,7 @@ const HomeScreen = ({navigation}) => {
         </View>
       </ScrollView>
       
-  <BottomNavBar activeScreen="Home" navigation={navigation} />
+      <BottomNavBar activeScreen="Home" navigation={navigation} />
     </SafeAreaView>
   );
 };
@@ -88,36 +78,6 @@ const styles = StyleSheet.create({
   content: {
     paddingHorizontal: 20,
     paddingBottom: 80,
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 15,
-  },
-  headerLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  profileCircle: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#003d66',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 12,
-  },
-  profileInitial: {
-    color: '#FFFFFF',
-    fontWeight: 'bold',
-    fontSize: 18,
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#1C2A3A',
   },
   welcomeText: {
     fontSize: 24,
@@ -208,35 +168,5 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#334155',
     textAlign: 'center',
-  },
-  bottomNav: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    backgroundColor: '#FFFFFF',
-    borderTopWidth: 1,
-    borderColor: '#E2E8F0',
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    paddingTop: 10,
-    paddingBottom: Platform.OS === 'ios' ? 20 : 10,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: -2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 5,
-    elevation: 10,
-  },
-  navItem: {
-    alignItems: 'center',
-  },
-  navText: {
-    fontSize: 12,
-    color: '#A0AEC0',
-  },
-  navTextActive: {
-    fontSize: 12,
-    fontWeight: 'bold',
-    color: '#003d66',
   },
 });
