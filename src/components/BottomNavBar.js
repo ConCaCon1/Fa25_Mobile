@@ -1,33 +1,35 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Platform } from 'react-native';
+import { View, Pressable, StyleSheet, Platform } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 
 const navItems = [
   { name: 'Home', icon: 'home-variant', target: 'Home' },
   { name: 'History', icon: 'history', target: 'History' },
-  { name: 'Map', icon: 'map', target: 'MapScreen' },
+  { name: 'Map', icon: 'map-marker-radius', target: 'MapScreen' },
   { name: 'Notifications', icon: 'bell-outline', target: 'Notification' },
   { name: 'Account', icon: 'account-circle-outline', target: 'Account' },
 ];
 
 const BottomNavBar = ({ activeScreen, navigation }) => {
   return (
-    <View style={styles.bottomNav}>
-      {navItems.map((item, index) => {
+    <View style={styles.bottomNavContainer}>
+      {navItems.map((item) => {
         const isActive = activeScreen === item.name;
-        const color = isActive ? '#003d66' : '#A0AEC0';
+        const iconColor = isActive ? '#FFFFFF' : '#A0AEC0';
 
         return (
-          <TouchableOpacity 
-            key={index} 
+          <Pressable
+            key={item.name}
             style={styles.navItem}
             onPress={() => navigation.navigate(item.target)}
           >
-            <MaterialCommunityIcons name={item.icon} size={26} color={color} />
-            <Text style={[styles.navText, isActive && styles.navTextActive]}>
-              {item.name}
-            </Text>
-          </TouchableOpacity>
+        
+            {isActive && <View style={styles.activePill} />}
+            
+            <MaterialCommunityIcons name={item.icon} size={28} color={iconColor} />
+            
+            
+          </Pressable>
         );
       })}
     </View>
@@ -35,35 +37,39 @@ const BottomNavBar = ({ activeScreen, navigation }) => {
 };
 
 const styles = StyleSheet.create({
-  bottomNav: {
+  bottomNavContainer: {
     flexDirection: 'row',
     justifyContent: 'space-around',
+    alignItems: 'center',
     backgroundColor: '#FFFFFF',
-    borderTopWidth: 1,
-    borderColor: '#E2E8F0',
     position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    paddingTop: 10,
-    paddingBottom: Platform.OS === 'ios' ? 20 : 10,
+    bottom: Platform.OS === 'ios' ? 30 : 20,
+    left: 20,
+    right: 20,
+    borderRadius: 50,
+    height: 65,
+    paddingHorizontal: 10,
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: -2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 5,
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
     elevation: 10,
   },
   navItem: {
+    flex: 1,
     alignItems: 'center',
-    flex: 1, 
+    justifyContent: 'center',
+    height: '100%',
   },
-  navText: {
-    fontSize: 12,
-    color: '#A0AEC0',
-  },
-  navTextActive: {
-    fontWeight: 'bold',
-    color: '#003d66',
+  activePill: {
+    width: 50,
+    height: 50,
+    borderRadius: 25, 
+    backgroundColor: '#003d66',
+    position: 'absolute', 
   },
 });
 
