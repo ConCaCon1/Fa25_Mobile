@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -7,61 +7,86 @@ import {
   TouchableOpacity,
   ScrollView,
   StatusBar,
+  Alert,
+  ActivityIndicator,
 } from "react-native";
-import { Ionicons, MaterialIcons, Feather } from "@expo/vector-icons";
+import { Ionicons, MaterialIcons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import FriendsTab from "../../components/FriendsTab";
 import BottomNavBar from "../../components/BottomNavBar";
+import { apiGet } from  "../../ultis/api" ;
 
 const AccountScreen = ({ navigation }) => {
-  const [activeTab, setActiveTab] = useState("POST");
+  const [activeTab, setActiveTab] = useState("BOATYARDS");
+  const [boatyards, setBoatyards] = useState([]);
+  const [loading, setLoading] = useState(false);
 
-  const renderTabContent = () => {
-    switch (activeTab) {
-      case 'POST':
-        return <PostCard />;
-      case 'FRIENDS':
-        return <FriendsTab />;
-      case 'DISCOUNT':
-        return (
-          <View style={styles.emptyTab}>
-            <Text style={styles.emptyTabText}>No discounts available yet.</Text>
-          </View>
-        );
-      default:
-        return <PostCard />;
+  useEffect(() => {
+    if (activeTab === "BOATYARDS") {
+      fetchBoatyards();
+    }
+  }, [activeTab]);
+
+  const fetchBoatyards = async () => {
+    try {
+      setLoading(true);
+      const json = await apiGet("/boatyards?page=1&size=30");
+      if (json?.data?.items) setBoatyards(json.data.items);
+    } catch (error) {
+      console.log("Error fetching boatyards:", error);
+    } finally {
+      setLoading(false);
     }
   };
 
+  const handleLogout = async () => {
+    Alert.alert("Logout", "Are you sure you want to log out?", [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Yes",
+        style: "destructive",
+        onPress: async () => {
+          try {
+            await AsyncStorage.removeItem("userToken");
+            navigation.reset({
+              index: 0,
+              routes: [{ name: "LoginScreen" }],
+            });
+          } catch (error) {
+            console.log("Logout failed:", error);
+          }
+        },
+      },
+    ]);
+  };
+
   return (
-    <SafeAreaView style={{flex: 1, backgroundColor: styles.container.backgroundColor}}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: "#F0F4F8" }}>
       <StatusBar barStyle="dark-content" />
       <ScrollView style={styles.container}>
         <View style={styles.bannerContainer}>
           <Image
-            source={{ uri: "https://images.unsplash.com/photo-1501785888041-af3ef285b470?auto=format&fit=crop&w=900&q=60" }}
+            source={{
+              uri: "https://images.unsplash.com/photo-1501785888041-af3ef285b470?auto=format&fit=crop&w=900&q=60",
+            }}
             style={styles.bannerImage}
           />
-          <TouchableOpacity style={styles.settingButton} onPress={() => {}}>
+          <TouchableOpacity style={styles.settingButton} onPress={handleLogout}>
             <Ionicons name="settings-outline" size={22} color="#1C2A3A" />
           </TouchableOpacity>
         </View>
 
         <View style={styles.profileSection}>
-          <Image
-            source={{ uri: "https://i.pravatar.cc/300" }}
-            style={styles.avatar}
-          />
+          <Image source={{ uri: "https://i.pravatar.cc/300" }} style={styles.avatar} />
           <View style={styles.profileInfoContainer}>
             <Text style={styles.name}>Samantha</Text>
-            
             <View style={styles.buttonRow}>
               <TouchableOpacity style={styles.editButton}>
                 <MaterialIcons name="edit" size={16} color="#003d66" />
                 <Text style={styles.editText}>Edit Profile</Text>
               </TouchableOpacity>
             </View>
-
             <Text style={styles.interests}>Vessel Management · Logistics · Cargo</Text>
             <Text style={styles.bio}>
               Experienced professional in maritime logistics...
@@ -71,77 +96,71 @@ const AccountScreen = ({ navigation }) => {
         </View>
 
         <View style={styles.tabRow}>
-          {["POST", "FRIENDS", "DISCOUNT"].map((tab) => (
+          {["BOATYARDS", "FRIENDS", "DISCOUNT"].map((tab) => (
             <TouchableOpacity
               key={tab}
-              style={[ styles.tabButton, activeTab === tab && styles.activeTabButton ]}
+              style={[styles.tabButton, activeTab === tab && styles.activeTabButton]}
               onPress={() => setActiveTab(tab)}
             >
-              <Text style={[ styles.tabText, activeTab === tab && styles.activeTabText ]}>
+              <Text style={[styles.tabText, activeTab === tab && styles.activeTabText]}>
                 {tab}
               </Text>
             </TouchableOpacity>
           ))}
         </View>
 
-        {renderTabContent()}
-
+        {loading ? (
+          <ActivityIndicator size="large" color="#003d66" style={{ marginTop: 40 }} />
+        ) : activeTab === "BOATYARDS" ? (
+          boatyards.length > 0 ? (
+            boatyards.map((item) => (
+              <TouchableOpacity key={item.id} style={styles.boatyardCard}
+                onPress={() => navigation.navigate("BoatyardDetail", { id: item.id })}>
+                <View style={styles.boatyardHeader}>
+                  <Image
+                    source={{
+                      uri:
+                        item.avatarUrl ||
+                        "https://cdn-icons-png.flaticon.com/512/147/147144.png",
+                    }}
+                    style={styles.boatyardAvatar}
+                  />
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.boatyardName}>{item.name}</Text>
+                    <Text style={styles.boatyardFullName}>{item.fullName}</Text>
+                  </View>
+                </View>
+                <Text style={styles.boatyardInfo}>📧 {item.email || "No email"}</Text>
+                <Text style={styles.boatyardInfo}>📍 {item.address || "No address"}</Text>
+                <Text style={styles.boatyardInfo}>📞 {item.phoneNumber || "No phone"}</Text>
+              </TouchableOpacity>
+            ))
+          ) : (
+            <View style={styles.emptyTab}>
+              <Text style={styles.emptyTabText}>No boatyards found.</Text>
+            </View>
+          )
+        ) : activeTab === "FRIENDS" ? (
+          <FriendsTab />
+        ) : (
+          <View style={styles.emptyTab}>
+            <Text style={styles.emptyTabText}>No discounts available yet.</Text>
+          </View>
+        )}
       </ScrollView>
+
       <BottomNavBar activeScreen="Account" navigation={navigation} />
     </SafeAreaView>
   );
 };
 
-const PostCard = () => (
-  <View style={styles.postCard}>
-    <View style={styles.postHeader}>
-      <Image
-        source={{ uri: "https://i.pravatar.cc/100" }}
-        style={styles.postAvatar}
-      />
-      <View style={{ flex: 1 }}>
-        <Text style={styles.postName}>Samantha</Text>
-        <Text style={styles.postTime}>10/14/2025</Text>
-      </View>
-    </View>
-    <Text style={styles.postTitle}>New Cargo Route Established</Text>
-    <Image
-      source={{ uri: "https://images.unsplash.com/photo-1600185365483-26d7a4d6e75b?auto=format&fit=crop&w=800&q=60" }}
-      style={styles.postImage}
-    />
-    <Text style={styles.postContent}>
-      Excited to announce a new efficient cargo route from Singapore to Rotterdam.
-    </Text>
-    <View style={styles.postFooter}>
-      <View style={styles.footerItem}>
-        <Feather name="heart" size={18} color="#5A6A7D" />
-        <Text style={styles.footerText}>107</Text>
-      </View>
-      <View style={styles.footerItem}>
-        <Feather name="message-circle" size={18} color="#5A6A7D" />
-        <Text style={styles.footerText}>15 comments</Text>
-      </View>
-      <TouchableOpacity style={styles.addPostBtn}>
-        <Feather name="plus" size={22} color="#FFFFFF" />
-      </TouchableOpacity>
-    </View>
-  </View>
-);
-
 export default AccountScreen;
 
+// Giữ nguyên phần Style như bạn đã có
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#F0F4F8",
-  },
-  bannerContainer: {
-    position: "relative",
-  },
-  bannerImage: {
-    width: "100%",
-    height: 150,
-  },
+  container: { flex: 1, backgroundColor: "#F0F4F8" },
+  bannerContainer: { position: "relative" },
+  bannerImage: { width: "100%", height: 150 },
   settingButton: {
     position: "absolute",
     top: 40,
@@ -170,44 +189,22 @@ const styles = StyleSheet.create({
     borderRadius: 35,
     marginRight: 12,
     borderWidth: 2,
-    borderColor: '#003d66'
+    borderColor: "#003d66",
   },
-  profileInfoContainer: {
-    flex: 1,
-  },
-  name: {
-    color: "#1C2A3A",
-    fontWeight: "700",
-    fontSize: 18,
-  },
-  buttonRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 8,
-  },
+  profileInfoContainer: { flex: 1 },
+  name: { color: "#1C2A3A", fontWeight: "700", fontSize: 18 },
+  buttonRow: { flexDirection: "row", alignItems: "center", marginTop: 8 },
   editButton: {
-    backgroundColor: "#E9EFF5", 
+    backgroundColor: "#E9EFF5",
     borderRadius: 8,
     flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: 10,
     paddingVertical: 6,
   },
-  editText: {
-    color: "#003d66", 
-    marginLeft: 4,
-    fontWeight: "600",
-  },
-  interests: {
-    color: "#5A6A7D",
-    fontSize: 13,
-    marginTop: 8, // Thêm margin
-  },
-  bio: {
-    color: "#5A6A7D",
-    fontSize: 13,
-    marginTop: 6,
-  },
+  editText: { color: "#003d66", marginLeft: 4, fontWeight: "600" },
+  interests: { color: "#5A6A7D", fontSize: 13, marginTop: 8 },
+  bio: { color: "#5A6A7D", fontSize: 13, marginTop: 6 },
   tabRow: {
     flexDirection: "row",
     justifyContent: "space-around",
@@ -222,95 +219,27 @@ const styles = StyleSheet.create({
     shadowRadius: 5,
     elevation: 3,
   },
-  tabButton: {
-    paddingVertical: 6,
-    paddingHorizontal: 14,
-  },
-  activeTabButton: {
-    backgroundColor: "#003d66",
-    borderRadius: 20,
-  },
-  tabText: {
-    color: "#5A6A7D",
-    fontSize: 13,
-    fontWeight: "600",
-  },
-  activeTabText: {
-    color: "#FFFFFF",
-  },
-  postCard: {
+  tabButton: { paddingVertical: 6, paddingHorizontal: 14 },
+  activeTabButton: { backgroundColor: "#003d66", borderRadius: 20 },
+  tabText: { color: "#5A6A7D", fontSize: 13, fontWeight: "600" },
+  activeTabText: { color: "#FFFFFF" },
+  boatyardCard: {
     backgroundColor: "#FFFFFF",
-    margin: 16,
+    marginHorizontal: 16,
+    marginTop: 12,
     borderRadius: 16,
     padding: 14,
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 5,
+    shadowRadius: 4,
+    elevation: 3,
   },
-  postHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  postAvatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    marginRight: 10,
-  },
-  postName: {
-    color: "#1C2A3A",
-    fontWeight: "600",
-  },
-  postTime: {
-    color: "#5A6A7D",
-    fontSize: 12,
-  },
-  postTitle: {
-    color: "#1C2A3A",
-    fontSize: 15,
-    fontWeight: "700",
-    marginTop: 10,
-  },
-  postImage: {
-    width: "100%",
-    height: 160,
-    borderRadius: 12,
-    marginTop: 8,
-  },
-  postContent: {
-    color: "#5A6A7D",
-    fontSize: 13,
-    marginTop: 10,
-  },
-  postFooter: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginTop: 12,
-  },
-  footerItem: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  footerText: {
-    color: "#5A6A7D",
-    marginLeft: 4,
-    fontSize: 12,
-  },
-  addPostBtn: {
-    backgroundColor: "#003d66",
-    borderRadius: 20,
-    padding: 8,
-  },
-  emptyTab: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 40,
-  },
-  emptyTabText: {
-    fontSize: 16,
-    color: '#5A6A7D',
-  }
+  boatyardHeader: { flexDirection: "row", alignItems: "center", marginBottom: 8 },
+  boatyardAvatar: { width: 50, height: 50, borderRadius: 25, marginRight: 10 },
+  boatyardName: { color: "#1C2A3A", fontWeight: "700", fontSize: 15 },
+  boatyardFullName: { color: "#5A6A7D", fontSize: 13 },
+  boatyardInfo: { color: "#5A6A7D", fontSize: 13, marginTop: 4 },
+  emptyTab: { alignItems: "center", justifyContent: "center", padding: 40 },
+  emptyTabText: { fontSize: 16, color: "#5A6A7D" },
 });
