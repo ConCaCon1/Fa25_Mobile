@@ -10,6 +10,8 @@ import AccountScreen from "../screens/AccountScreen/AccountScreen";
 import HistoryScreen from "../screens/HistoryScreen.js/HistoryScreen";
 import NotificationScreen from "../screens/NotificationScreen/NotificationScreen";
 import BoatyardDetailsScreen from "../screens/BoatyardDetailsScreen/BoatyardDetailsScreen";
+import ShipMapScreen from "../screens/ShipMapScreen/ShipMapScreen";
+import AddShipScreen from "../screens/AddShipScreen/AddShipScreen";
 
 const Stack = createNativeStackNavigator();
 
@@ -32,6 +34,8 @@ export default function AppNavigator() {
         <Stack.Screen name="History" component={HistoryScreen} />
         <Stack.Screen name="Notification" component={NotificationScreen} />
         <Stack.Screen name="BoatyardDetail" component={BoatyardDetailsScreen} />
+        <Stack.Screen name="ShipMapScreen" component={ShipMapScreen} />
+        <Stack.Screen name="AddShipScreen" component={AddShipScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );

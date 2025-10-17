@@ -7,11 +7,27 @@ import {
   ActivityIndicator,
   TouchableOpacity,
   ScrollView,
+  Linking,
+  Platform,
+  StatusBar,
 } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
+import { Ionicons, Feather } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import MapView, { Marker } from "react-native-maps";
-import { apiGet } from  "../../ultis/api" ;
+import { apiGet } from "../../ultis/api";
+
+const DetailItem = ({ iconName, label, value }) => (
+  <View style={styles.detailItemContainer}>
+    <View style={styles.detailItemIconBg}>
+      <Feather name={iconName} size={20} color="#007BFF" />
+    </View>
+    <View style={styles.detailItemTextContainer}>
+      <Text style={styles.detailItemLabel}>{label}</Text>
+      <Text style={styles.detailItemValue}>{value}</Text>
+    </View>
+  </View>
+);
+
 
 const BoatyardDetailsScreen = ({ route, navigation }) => {
   const { id } = route.params;
@@ -32,11 +48,24 @@ const BoatyardDetailsScreen = ({ route, navigation }) => {
       setLoading(false);
     }
   };
+  
+  const handlePressCall = () => {
+    if (boatyard?.phoneNumber) {
+      Linking.openURL(`tel:${boatyard.phoneNumber}`);
+    }
+  };
+
+  const handlePressEmail = () => {
+    if (boatyard?.email) {
+      Linking.openURL(`mailto:${boatyard.email}`);
+    }
+  };
+
 
   if (loading) {
     return (
       <View style={styles.loader}>
-        <ActivityIndicator size="large" color="#003d66" />
+        <ActivityIndicator size="large" color="#007BFF" />
       </View>
     );
   }
@@ -50,12 +79,12 @@ const BoatyardDetailsScreen = ({ route, navigation }) => {
   }
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: "#F0F4F8" }}>
+    <SafeAreaView style={styles.container}>
+      <StatusBar barStyle="light-content" />
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-          <Ionicons name="arrow-back" size={24} color="#003d66" />
+          <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Chi tiết xưởng</Text>
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false}>
@@ -63,25 +92,50 @@ const BoatyardDetailsScreen = ({ route, navigation }) => {
           source={{
             uri:
               boatyard.avatarUrl ||
-              "https://cdn-icons-png.flaticon.com/512/147/147144.png",
+              "https://images.unsplash.com/photo-1556912173-356d73534346?q=80&w=2070&auto=format&fit=crop",
           }}
           style={styles.bannerImage}
         />
+        
+        <View style={styles.contentContainer}>
+          <View style={styles.titleSection}>
+            <Text style={styles.boatyardName}>{boatyard.name}</Text>
+            <View style={styles.ownerSection}>
+              <Feather name="user" size={16} color="#607D8B" />
+              <Text style={styles.boatyardOwner}>Chủ xưởng: {boatyard.fullName}</Text>
+            </View>
+          </View>
 
-        <View style={styles.infoCard}>
-          <Text style={styles.boatyardName}>{boatyard.name}</Text>
-          <Text style={styles.boatyardOwner}>👷 Chủ xưởng: {boatyard.fullName}</Text>
-          <Text style={styles.boatyardText}>📍 Địa chỉ: {boatyard.address}</Text>
-          <Text style={styles.boatyardText}>📞 Số điện thoại: {boatyard.phoneNumber}</Text>
-          <Text style={styles.boatyardText}>📧 Email: {boatyard.email}</Text>
-          <Text style={styles.boatyardText}>
-            🕒 Ngày tạo: {new Date(boatyard.createdDate).toLocaleString("vi-VN")}
-          </Text>
+          <View style={styles.actionButtonsContainer}>
+            <TouchableOpacity style={styles.actionButton} onPress={handlePressCall} activeOpacity={0.8}>
+                <Feather name="phone-call" size={18} color="#FFFFFF" />
+                <Text style={styles.actionButtonText}>Gọi điện</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={[styles.actionButton, styles.emailButton]} onPress={handlePressEmail} activeOpacity={0.8}>
+                <Feather name="mail" size={18} color="#FFFFFF" />
+                <Text style={styles.actionButtonText}>Gửi Email</Text>
+            </TouchableOpacity>
+          </View>
+          
+          <View style={styles.detailsCard}>
+            <Text style={styles.sectionTitle}>Thông tin chi tiết</Text>
+            <DetailItem 
+              iconName="map-pin" 
+              label="Địa chỉ" 
+              value={boatyard.address} 
+            />
+            <DetailItem 
+              iconName="clock" 
+              label="Ngày tham gia" 
+              value={new Date(boatyard.createdDate).toLocaleDateString("vi-VN")} 
+            />
+          </View>
         </View>
 
+
         {boatyard.latitude && boatyard.longitude ? (
-          <View style={styles.mapContainer}>
-            <Text style={styles.mapTitle}>🗺️ Vị trí xưởng</Text>
+          <View style={styles.mapCard}>
+            <Text style={styles.sectionTitle}>🗺️ Vị trí trên bản đồ</Text>
             <MapView
               style={styles.map}
               initialRegion={{
@@ -102,8 +156,8 @@ const BoatyardDetailsScreen = ({ route, navigation }) => {
             </MapView>
           </View>
         ) : (
-          <View style={styles.mapContainer}>
-            <Text style={{ color: "#5A6A7D" }}>Không có thông tin vị trí</Text>
+          <View style={styles.mapCard}>
+            <Text style={{color: '#607D8B'}}>Không có thông tin vị trí</Text>
           </View>
         )}
       </ScrollView>
@@ -114,75 +168,154 @@ const BoatyardDetailsScreen = ({ route, navigation }) => {
 export default BoatyardDetailsScreen;
 
 const styles = StyleSheet.create({
-  loader: { flex: 1, alignItems: "center", justifyContent: "center" },
+  container: {
+    flex: 1,
+    backgroundColor: "#F4F7FC",
+  },
+  loader: { 
+    flex: 1, 
+    alignItems: "center", 
+    justifyContent: "center", 
+    backgroundColor: "#F4F7FC"
+  },
   header: {
-    flexDirection: "row",
-    alignItems: "center",
-    padding: 12,
-    backgroundColor: "#FFFFFF",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    elevation: 2,
+    position: 'absolute',
+    top: Platform.OS === 'android' ? 20 : 50,
+    left: 16,
+    zIndex: 10,
   },
   backBtn: {
-    padding: 6,
+    backgroundColor: 'rgba(0, 0, 0, 0.4)',
+    padding: 8,
     borderRadius: 50,
-    marginRight: 8,
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: "700",
-    color: "#003d66",
   },
   bannerImage: {
     width: "100%",
-    height: 220,
+    height: 250,
   },
-  infoCard: {
-    backgroundColor: "#FFF",
-    marginHorizontal: 16,
-    marginTop: -20,
-    padding: 16,
+  contentContainer: {
+    paddingHorizontal: 16,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    marginTop: -24,
+    backgroundColor: '#F4F7FC', 
+  },
+  titleSection: {
+    backgroundColor: '#FFFFFF',
+    padding: 20,
     borderRadius: 16,
-    shadowColor: "#000",
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 3,
+    shadowColor: "#9FB1C8",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 10,
+    elevation: 5,
   },
   boatyardName: {
-    fontSize: 20,
-    fontWeight: "700",
-    color: "#1C2A3A",
-    marginBottom: 6,
+    fontSize: 24,
+    fontWeight: "bold",
+    color: "#1A2533",
+    marginBottom: 8,
+  },
+  ownerSection: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   boatyardOwner: {
     fontSize: 15,
-    color: "#003d66",
-    marginBottom: 8,
+    color: "#607D8B",
+    marginLeft: 8,
   },
-  boatyardText: {
-    color: "#5A6A7D",
-    fontSize: 14,
-    marginTop: 4,
-  },
-  mapContainer: {
+  actionButtonsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     marginTop: 20,
+    gap: 16, 
+  },
+  actionButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#007BFF',
+    paddingVertical: 14,
+    borderRadius: 12,
+    shadowColor: "#007BFF",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 5,
+    elevation: 6,
+  },
+  emailButton: {
+    backgroundColor: '#17A2B8', 
+    shadowColor: "#17A2B8",
+  },
+  actionButtonText: {
+    color: '#FFFFFF',
+    fontWeight: 'bold',
+    fontSize: 16,
+    marginLeft: 8,
+  },
+  detailsCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 20,
+    marginTop: 20,
+    shadowColor: "#9FB1C8",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 10,
+    elevation: 5,
+  },
+  sectionTitle: {
+    fontWeight: "bold",
+    fontSize: 18,
+    color: "#1A2533",
+    marginBottom: 16,
+  },
+  detailItemContainer: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: 16,
+  },
+  detailItemIconBg: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#E3F2FD', 
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 16,
+  },
+  detailItemTextContainer: {
+    flex: 1,
+  },
+  detailItemLabel: {
+    fontSize: 13,
+    color: '#607D8B',
+    marginBottom: 4,
+  },
+  detailItemValue: {
+    fontSize: 15,
+    color: '#263238',
+    lineHeight: 22,
+  },
+  mapCard: {
     marginHorizontal: 16,
     backgroundColor: "#FFFFFF",
     borderRadius: 16,
-    overflow: "hidden",
-    paddingBottom: 16,
-  },
-  mapTitle: {
-    fontWeight: "700",
-    fontSize: 16,
-    color: "#1C2A3A",
-    padding: 12,
+    padding: 16,
+    marginTop: 20,
+    marginBottom: 20,
+    shadowColor: "#9FB1C8",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 10,
+    elevation: 5,
   },
   map: {
     width: "100%",
-    height: 250,
+    height: 220,
     borderRadius: 12,
+    overflow: 'hidden',
   },
 });
