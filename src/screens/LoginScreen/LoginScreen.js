@@ -8,22 +8,24 @@ import {
   Alert,
   StatusBar,
   ActivityIndicator,
+  ImageBackground,
+  KeyboardAvoidingView,
+  Platform,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { AntDesign } from "@expo/vector-icons";
+import { Feather } from "@expo/vector-icons";
+
 import { API_BASE_URL } from "@env";
 import { saveToken } from "../../auth/authStorage";
 
-console.log("🔧 Loaded API_BASE_URL:", API_BASE_URL);
-
 const LoginScreen = ({ navigation }) => {
-  const [vesselRegNo, setVesselRegNo] = useState("");
+  const [usernameOrEmail, setUsernameOrEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
   const handleLogin = async () => {
-    if (!vesselRegNo.trim() || !password.trim()) {
+    if (!usernameOrEmail.trim() || !password.trim()) {
       Alert.alert("Validation Error", "Please enter username and password");
       return;
     }
@@ -34,7 +36,7 @@ const LoginScreen = ({ navigation }) => {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          usernameOrEmail: vesselRegNo,
+          usernameOrEmail: usernameOrEmail,
           password: password,
         }),
       });
@@ -42,22 +44,14 @@ const LoginScreen = ({ navigation }) => {
       const data = await response.json();
 
       if (response.ok && data.data?.accessToken) {
-        console.log("✅ Login success:", data);
-
         await saveToken(data.data.accessToken);
-
         Alert.alert("Success", "Login successful!", [
-          {
-            text: "OK",
-            onPress: () => navigation.replace("Home"), 
-          },
+          { text: "OK", onPress: () => navigation.replace("Home") },
         ]);
       } else {
-        console.error("❌ Login failed:", data);
         Alert.alert("Login Failed", data.message || "Invalid credentials");
       }
     } catch (error) {
-      console.error("❌ Login error:", error);
       Alert.alert("Error", "Network error. Please check your connection.");
     } finally {
       setIsLoading(false);
@@ -66,67 +60,84 @@ const LoginScreen = ({ navigation }) => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" />
-      <View style={styles.content}>
-        <View style={styles.header}>
-          <Text style={styles.title}>Welcome to MaritimeHub</Text>
-          <Text style={styles.subtitle}>Connect Suppliers and Shipyards</Text>
-        </View>
+      <StatusBar barStyle="light-content" />
 
-        <View style={styles.form}>
-          <TextInput
-            style={styles.input}
-            placeholder="Username or Email"
-            placeholderTextColor="#8A9BAD"
-            value={vesselRegNo}
-            onChangeText={setVesselRegNo}
-            keyboardType="email-address"
-            autoCapitalize="none"
-            editable={!isLoading}
-          />
+      <ImageBackground
+        source={{
+          uri: "https://cdn.pixabay.com/animation/2025/09/06/09/17/09-17-31-120_512.gif",
+        }}
+        style={StyleSheet.absoluteFill}
+        resizeMode="cover"
+      >
+        <View style={styles.overlay} />
 
-          <View style={styles.passwordContainer}>
-            <TextInput
-              style={styles.passwordInput}
-              placeholder="Password"
-              placeholderTextColor="#8A9BAD"
-              secureTextEntry={!showPassword}
-              value={password}
-              onChangeText={setPassword}
-              editable={!isLoading}
-            />
-            <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
-              <AntDesign
-                name={showPassword ? "eye" : "eye-invisible"}
-                size={22}
-                color="#8A9BAD"
+        <KeyboardAvoidingView
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          style={styles.content}
+        >
+          <View style={styles.header}>
+            <Text style={styles.title}>Welcome to MaritimeHub</Text>
+            <Text style={styles.subtitle}>Connect Suppliers and Shipyards</Text>
+          </View>
+
+          <View style={styles.form}>
+            <View style={styles.inputContainer}>
+              <Feather name="user" size={20} color="#E0E0E0" style={styles.inputIcon} />
+              <TextInput
+                style={styles.input}
+                placeholder="Username or Email"
+                placeholderTextColor="#CFD8DC"
+                value={usernameOrEmail}
+                onChangeText={setUsernameOrEmail}
+                autoCapitalize="none"
+                keyboardType="email-address"
               />
+            </View>
+
+            <View style={styles.inputContainer}>
+              <Feather name="lock" size={20} color="#E0E0E0" style={styles.inputIcon} />
+              <TextInput
+                style={styles.input}
+                placeholder="Password"
+                placeholderTextColor="#CFD8DC"
+                secureTextEntry={!showPassword}
+                value={password}
+                onChangeText={setPassword}
+              />
+              <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
+                <Feather
+                  name={showPassword ? "eye" : "eye-off"}
+                  size={20}
+                  color="#E0E0E0"
+                />
+              </TouchableOpacity>
+            </View>
+
+            <TouchableOpacity
+              style={[styles.button, isLoading && styles.buttonDisabled]}
+              onPress={handleLogin}
+              disabled={isLoading}
+              activeOpacity={0.8}
+            >
+              {isLoading ? (
+                <ActivityIndicator color="#FFFFFF" />
+              ) : (
+                <Text style={styles.buttonText}>Login</Text>
+              )}
             </TouchableOpacity>
           </View>
 
-          <TouchableOpacity
-            style={[styles.button, isLoading && styles.buttonDisabled]}
-            onPress={handleLogin}
-            disabled={isLoading}
-          >
-            {isLoading ? (
-              <ActivityIndicator color="#FFFFFF" />
-            ) : (
-              <Text style={styles.buttonText}>Login</Text>
-            )}
-          </TouchableOpacity>
-        </View>
-
-        <View style={styles.footer}>
-          <Text style={styles.footerText}>Don't have an account?</Text>
-          <TouchableOpacity
-            onPress={() => navigation.navigate("Register")}
-            disabled={isLoading}
-          >
-            <Text style={styles.registerLink}> Register now</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
+          <View style={styles.footer}>
+            <Text style={styles.footerText}>Don't have an account?</Text>
+            <TouchableOpacity
+              onPress={() => navigation.navigate("Register")}
+              disabled={isLoading}
+            >
+              <Text style={styles.registerLink}> Register now</Text>
+            </TouchableOpacity>
+          </View>
+        </KeyboardAvoidingView>
+      </ImageBackground>
     </SafeAreaView>
   );
 };
@@ -136,7 +147,10 @@ export default LoginScreen;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F0F4F8",
+  },
+  overlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(0, 25, 51, 0.6)",
   },
   content: {
     flex: 1,
@@ -145,61 +159,57 @@ const styles = StyleSheet.create({
   },
   header: {
     alignItems: "center",
-    marginBottom: 40,
+    marginBottom: 48,
   },
   title: {
-    fontSize: 28,
+    fontSize: 32,
     fontWeight: "bold",
-    color: "#003d66",
+    color: "#FFFFFF",
     textAlign: "center",
   },
   subtitle: {
     fontSize: 16,
-    color: "#5A6A7D",
+    color: "#CFD8DC",
     textAlign: "center",
     marginTop: 8,
   },
   form: {
     width: "100%",
   },
-  input: {
-    backgroundColor: "#FFFFFF",
-    borderWidth: 1,
-    borderColor: "#E2E8F0",
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    height: 52,
-    fontSize: 16,
-    color: "#1C2A3A",
-    marginBottom: 16,
-  },
-  passwordContainer: {
+  inputContainer: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#FFFFFF",
-    borderWidth: 1,
-    borderColor: "#E2E8F0",
+    backgroundColor: "rgba(255, 255, 255, 0.25)",
     borderRadius: 12,
-    height: 52,
-    marginBottom: 16,
+    height: 56,
+    marginBottom: 20,
     paddingHorizontal: 16,
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.4)",
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 5,
   },
-  passwordInput: {
+  inputIcon: {
+    marginRight: 12,
+  },
+  input: {
     flex: 1,
     fontSize: 16,
-    color: "#1C2A3A",
+    color: "#FFFFFF",
   },
   button: {
-    backgroundColor: "#003d66",
-    height: 52,
+    backgroundColor: "#007BFF",
+    height: 56,
     borderRadius: 12,
     justifyContent: "center",
     alignItems: "center",
-    elevation: 3,
-    shadowColor: "#003d66",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 5,
+    marginTop: 10,
   },
   buttonDisabled: {
     opacity: 0.6,
@@ -207,19 +217,19 @@ const styles = StyleSheet.create({
   buttonText: {
     color: "#FFFFFF",
     fontWeight: "bold",
-    fontSize: 16,
+    fontSize: 18,
   },
   footer: {
     flexDirection: "row",
     justifyContent: "center",
-    marginTop: 24,
+    marginTop: 32,
   },
   footerText: {
-    color: "#5A6A7D",
+    color: "#CFD8DC",
     fontSize: 14,
   },
   registerLink: {
-    color: "#003d66",
+    color: "#FFD700",
     fontWeight: "bold",
     fontSize: 14,
   },
