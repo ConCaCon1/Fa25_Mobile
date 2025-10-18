@@ -13,8 +13,8 @@ import {
 } from "react-native";
 import { Ionicons, Feather } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
-import MapView, { Marker } from "react-native-maps";
 import { apiGet } from "../../ultis/api";
+import GoongMapView from "../../components/GoongMapView"; // 👈 dùng component riêng
 
 const DetailItem = ({ iconName, label, value }) => (
   <View style={styles.detailItemContainer}>
@@ -27,7 +27,6 @@ const DetailItem = ({ iconName, label, value }) => (
     </View>
   </View>
 );
-
 
 const BoatyardDetailsScreen = ({ route, navigation }) => {
   const { id } = route.params;
@@ -48,19 +47,14 @@ const BoatyardDetailsScreen = ({ route, navigation }) => {
       setLoading(false);
     }
   };
-  
+
   const handlePressCall = () => {
-    if (boatyard?.phoneNumber) {
-      Linking.openURL(`tel:${boatyard.phoneNumber}`);
-    }
+    if (boatyard?.phoneNumber) Linking.openURL(`tel:${boatyard.phoneNumber}`);
   };
 
   const handlePressEmail = () => {
-    if (boatyard?.email) {
-      Linking.openURL(`mailto:${boatyard.email}`);
-    }
+    if (boatyard?.email) Linking.openURL(`mailto:${boatyard.email}`);
   };
-
 
   if (loading) {
     return (
@@ -96,7 +90,7 @@ const BoatyardDetailsScreen = ({ route, navigation }) => {
           }}
           style={styles.bannerImage}
         />
-        
+
         <View style={styles.contentContainer}>
           <View style={styles.titleSection}>
             <Text style={styles.boatyardName}>{boatyard.name}</Text>
@@ -107,59 +101,53 @@ const BoatyardDetailsScreen = ({ route, navigation }) => {
           </View>
 
           <View style={styles.actionButtonsContainer}>
-            <TouchableOpacity style={styles.actionButton} onPress={handlePressCall} activeOpacity={0.8}>
-                <Feather name="phone-call" size={18} color="#FFFFFF" />
-                <Text style={styles.actionButtonText}>Gọi điện</Text>
+            <TouchableOpacity
+              style={styles.actionButton}
+              onPress={handlePressCall}
+              activeOpacity={0.8}
+            >
+              <Feather name="phone-call" size={18} color="#FFFFFF" />
+              <Text style={styles.actionButtonText}>Gọi điện</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={[styles.actionButton, styles.emailButton]} onPress={handlePressEmail} activeOpacity={0.8}>
-                <Feather name="mail" size={18} color="#FFFFFF" />
-                <Text style={styles.actionButtonText}>Gửi Email</Text>
+
+            <TouchableOpacity
+              style={[styles.actionButton, styles.emailButton]}
+              onPress={handlePressEmail}
+              activeOpacity={0.8}
+            >
+              <Feather name="mail" size={18} color="#FFFFFF" />
+              <Text style={styles.actionButtonText}>Gửi Email</Text>
             </TouchableOpacity>
           </View>
-          
+
           <View style={styles.detailsCard}>
             <Text style={styles.sectionTitle}>Thông tin chi tiết</Text>
-            <DetailItem 
-              iconName="map-pin" 
-              label="Địa chỉ" 
-              value={boatyard.address} 
-            />
-            <DetailItem 
-              iconName="clock" 
-              label="Ngày tham gia" 
-              value={new Date(boatyard.createdDate).toLocaleDateString("vi-VN")} 
+            <DetailItem iconName="map-pin" label="Địa chỉ" value={boatyard.address} />
+            <DetailItem
+              iconName="clock"
+              label="Ngày tham gia"
+              value={new Date(boatyard.createdDate).toLocaleDateString("vi-VN")}
             />
           </View>
         </View>
 
-
-        {boatyard.latitude && boatyard.longitude ? (
-          <View style={styles.mapCard}>
-            <Text style={styles.sectionTitle}>🗺️ Vị trí trên bản đồ</Text>
-            <MapView
-              style={styles.map}
-              initialRegion={{
-                latitude: parseFloat(boatyard.latitude),
-                longitude: parseFloat(boatyard.longitude),
-                latitudeDelta: 0.01,
-                longitudeDelta: 0.01,
-              }}
-            >
-              <Marker
-                coordinate={{
-                  latitude: parseFloat(boatyard.latitude),
-                  longitude: parseFloat(boatyard.longitude),
-                }}
-                title={boatyard.name}
-                description={boatyard.address}
+        {/* ✅ Dùng GoongMapView thay cho MapView */}
+        <View style={styles.mapCard}>
+          <Text style={styles.sectionTitle}>🗺️ Vị trí trên bản đồ</Text>
+          {boatyard.latitude && boatyard.longitude ? (
+            <View style={styles.mapWrapper}>
+              <GoongMapView
+                latitude={parseFloat(boatyard.latitude)}
+                longitude={parseFloat(boatyard.longitude)}
+                popupText={boatyard.name}
+                icon="🏭"
+                zoom={14}
               />
-            </MapView>
-          </View>
-        ) : (
-          <View style={styles.mapCard}>
-            <Text style={{color: '#607D8B'}}>Không có thông tin vị trí</Text>
-          </View>
-        )}
+            </View>
+          ) : (
+            <Text style={{ color: "#607D8B" }}>Không có thông tin vị trí</Text>
+          )}
+        </View>
       </ScrollView>
     </SafeAreaView>
   );
@@ -172,20 +160,20 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#F4F7FC",
   },
-  loader: { 
-    flex: 1, 
-    alignItems: "center", 
-    justifyContent: "center", 
-    backgroundColor: "#F4F7FC"
+  loader: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#F4F7FC",
   },
   header: {
-    position: 'absolute',
-    top: Platform.OS === 'android' ? 20 : 50,
+    position: "absolute",
+    top: Platform.OS === "android" ? 20 : 50,
     left: 16,
     zIndex: 10,
   },
   backBtn: {
-    backgroundColor: 'rgba(0, 0, 0, 0.4)',
+    backgroundColor: "rgba(0, 0, 0, 0.4)",
     padding: 8,
     borderRadius: 50,
   },
@@ -198,10 +186,10 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     marginTop: -24,
-    backgroundColor: '#F4F7FC', 
+    backgroundColor: "#F4F7FC",
   },
   titleSection: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: "#FFFFFF",
     padding: 20,
     borderRadius: 16,
     shadowColor: "#9FB1C8",
@@ -217,8 +205,8 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   ownerSection: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
   },
   boatyardOwner: {
     fontSize: 15,
@@ -226,17 +214,17 @@ const styles = StyleSheet.create({
     marginLeft: 8,
   },
   actionButtonsContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    justifyContent: "space-between",
     marginTop: 20,
-    gap: 16, 
+    gap: 16,
   },
   actionButton: {
     flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#007BFF',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#007BFF",
     paddingVertical: 14,
     borderRadius: 12,
     shadowColor: "#007BFF",
@@ -246,17 +234,17 @@ const styles = StyleSheet.create({
     elevation: 6,
   },
   emailButton: {
-    backgroundColor: '#17A2B8', 
+    backgroundColor: "#17A2B8",
     shadowColor: "#17A2B8",
   },
   actionButtonText: {
-    color: '#FFFFFF',
-    fontWeight: 'bold',
+    color: "#FFFFFF",
+    fontWeight: "bold",
     fontSize: 16,
     marginLeft: 8,
   },
   detailsCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: "#FFFFFF",
     borderRadius: 16,
     padding: 20,
     marginTop: 20,
@@ -273,17 +261,17 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   detailItemContainer: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
+    flexDirection: "row",
+    alignItems: "flex-start",
     marginBottom: 16,
   },
   detailItemIconBg: {
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: '#E3F2FD', 
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: "#E3F2FD",
+    justifyContent: "center",
+    alignItems: "center",
     marginRight: 16,
   },
   detailItemTextContainer: {
@@ -291,12 +279,12 @@ const styles = StyleSheet.create({
   },
   detailItemLabel: {
     fontSize: 13,
-    color: '#607D8B',
+    color: "#607D8B",
     marginBottom: 4,
   },
   detailItemValue: {
     fontSize: 15,
-    color: '#263238',
+    color: "#263238",
     lineHeight: 22,
   },
   mapCard: {
@@ -312,10 +300,9 @@ const styles = StyleSheet.create({
     shadowRadius: 10,
     elevation: 5,
   },
-  map: {
-    width: "100%",
+  mapWrapper: {
     height: 220,
     borderRadius: 12,
-    overflow: 'hidden',
+    overflow: "hidden",
   },
 });

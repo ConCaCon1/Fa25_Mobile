@@ -1,50 +1,21 @@
 import React from "react";
-import { View, StyleSheet, Text, TouchableOpacity } from "react-native";
-import MapView, { Marker } from "react-native-maps";
-import { FontAwesome5, Ionicons } from "@expo/vector-icons";
+import { View, TouchableOpacity, StyleSheet } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
+import GoongMapView from "../../components/GoongMapView";
 
 const ShipMapScreen = ({ route }) => {
   const { name, latitude, longitude } = route.params;
   const navigation = useNavigation();
 
-  const lat = parseFloat(latitude);
-  const lon = parseFloat(longitude);
-
-  if (!lat || !lon) {
-    return (
-      <View style={styles.center}>
-        <Text style={{ color: "#333" }}>No coordinates available</Text>
-      </View>
-    );
-  }
-
   return (
     <View style={styles.container}>
-      <MapView
-        style={styles.map}
-        initialRegion={{
-          latitude: lat,
-          longitude: lon,
-          latitudeDelta: 0.05,
-          longitudeDelta: 0.05,
-        }}
-      >
-        <Marker coordinate={{ latitude: lat, longitude: lon }} title={name}>
-          <View style={{ alignItems: "center" }}>
-            <FontAwesome5 name="ship" size={42} color="#1e90ff" />
-            <View
-              style={{
-                width: 6,
-                height: 6,
-                backgroundColor: "#1e90ff",
-                borderRadius: 3,
-                marginTop: 2,
-              }}
-            />
-          </View>
-        </Marker>
-      </MapView>
+      <GoongMapView
+        latitude={parseFloat(latitude)}
+        longitude={parseFloat(longitude)}
+        popupText={name || "Tàu không rõ tên"}
+        icon="🛳"
+      />
 
       <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
         <Ionicons name="arrow-back" size={24} color="#fff" />
@@ -56,12 +27,10 @@ const ShipMapScreen = ({ route }) => {
 export default ShipMapScreen;
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
-  map: { flex: 1 },
-  center: { flex: 1, alignItems: "center", justifyContent: "center" },
+  container: { flex: 1, backgroundColor: "#000" },
   backButton: {
     position: "absolute",
-    top: 50, 
+    top: 50,
     left: 20,
     backgroundColor: "rgba(0,0,0,0.6)",
     padding: 10,
