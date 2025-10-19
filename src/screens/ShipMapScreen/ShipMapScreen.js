@@ -1,14 +1,14 @@
-import React from "react";
 import { View, TouchableOpacity, StyleSheet } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import GoongMapView from "../../components/GoongMapView";
-
+import { SafeAreaView } from "react-native-safe-area-context";
 const ShipMapScreen = ({ route }) => {
   const { name, latitude, longitude } = route.params;
   const navigation = useNavigation();
 
   return (
+    <SafeAreaView style={{ flex: 1, backgroundColor: "#000" }}>
     <View style={styles.container}>
       <GoongMapView
         latitude={parseFloat(latitude)}
@@ -21,6 +21,7 @@ const ShipMapScreen = ({ route }) => {
         <Ionicons name="arrow-back" size={24} color="#fff" />
       </TouchableOpacity>
     </View>
+    </SafeAreaView>
   );
 };
 
