@@ -12,6 +12,7 @@ import NotificationScreen from "../screens/NotificationScreen/NotificationScreen
 import BoatyardDetailsScreen from "../screens/BoatyardDetailsScreen/BoatyardDetailsScreen";
 import ShipMapScreen from "../screens/ShipMapScreen/ShipMapScreen";
 import AddShipScreen from "../screens/AddShipScreen/AddShipScreen";
+import BoatyardsListScreen from "../screens/BoatyardsListScreen/BoatyardsListScreen";
 
 const Stack = createNativeStackNavigator();
 
@@ -36,6 +37,7 @@ export default function AppNavigator() {
         <Stack.Screen name="BoatyardDetail" component={BoatyardDetailsScreen} />
         <Stack.Screen name="ShipMapScreen" component={ShipMapScreen} />
         <Stack.Screen name="AddShipScreen" component={AddShipScreen} />
+        <Stack.Screen name="BoatyardsList" component={BoatyardsListScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );

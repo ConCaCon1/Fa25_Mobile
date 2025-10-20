@@ -5,7 +5,6 @@ import {
   StyleSheet,
   Image,
   TouchableOpacity,
-  ScrollView,
   StatusBar,
   Alert,
   ActivityIndicator,
@@ -19,8 +18,7 @@ import { apiGet } from "../../ultis/api";
 import { useIsFocused } from "@react-navigation/native";
 
 const AccountScreen = ({ navigation }) => {
-  const [activeTab, setActiveTab] = useState("BOATYARDS");
-  const [boatyards, setBoatyards] = useState([]);
+  const [activeTab, setActiveTab] = useState("SHIPS");
   const [ships, setShips] = useState([]);
   const [loading, setLoading] = useState(false);
   const [page, setPage] = useState(1);
@@ -28,56 +26,30 @@ const AccountScreen = ({ navigation }) => {
   const isFocused = useIsFocused();
 
   useEffect(() => {
-    if (activeTab === "BOATYARDS") {
-      fetchBoatyards();
-    } else if (activeTab === "SHIPS") {
+    if (activeTab === "SHIPS" && isFocused) {
       setShips([]);
       setPage(1);
       setHasMore(true);
-      fetchShips(1);
+      fetchShips(1, true);
     }
   }, [activeTab, isFocused]);
 
-  // Thêm một useEffect để tự động refresh khi quay lại từ AddShipScreen
-  useEffect(() => {
-    const unsubscribe = navigation.addListener("focus", () => {
-      // Logic refresh chỉ khi tab SHIPS đang active
-      if (activeTab === "SHIPS") {
-        setShips([]);
-        setPage(1);
-        setHasMore(true);
-        fetchShips(1);
-      }
-    });
-
-    return unsubscribe;
-  }, [navigation, activeTab]);
-
-
-  const fetchBoatyards = async () => {
-    try {
-      setLoading(true);
-      const json = await apiGet("/boatyards?page=1&size=30");
-      if (json?.data?.items) setBoatyards(json.data.items);
-    } catch (error) {
-      console.log("Error fetching boatyards:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const fetchShips = async (pageNum = 1) => {
+  const fetchShips = async (pageNum = 1, reset = false) => {
     try {
       setLoading(true);
       const json = await apiGet(`/ships?page=${pageNum}&size=5`);
-      if (json?.data?.items?.length > 0) {
-        setShips((prev) => [...prev, ...json.data.items]);
-        if (json.data.items.length < 5) setHasMore(false);
-      } else {
-        setHasMore(false);
-      }
-    } catch (error) {
-      console.log("Error fetching ships:", error);
+      const newShips = json?.data?.items || [];
+
+      setShips((prev) => {
+        const merged = reset ? newShips : [...prev, ...newShips];
+        const uniqueShips = merged.filter(
+          (v, i, a) => a.findIndex((t) => t.id === v.id) === i
+        );
+        if (newShips.length < 5) setHasMore(false);
+        return uniqueShips;
+      });
+    } catch (err) {
+      console.log("❌ Error fetching ships:", err);
     } finally {
       setLoading(false);
     }
@@ -85,17 +57,17 @@ const AccountScreen = ({ navigation }) => {
 
   const loadMoreShips = () => {
     if (!loading && hasMore) {
-      const next = page + 1;
-      setPage(next);
-      fetchShips(next);
+      const nextPage = page + 1;
+      setPage(nextPage);
+      fetchShips(nextPage);
     }
   };
 
   const handleLogout = async () => {
-    Alert.alert("Logout", "Are you sure you want to log out?", [
-      { text: "Cancel", style: "cancel" },
+    Alert.alert("Logout", "Bạn có chắc chắn muốn đăng xuất?", [
+      { text: "Hủy", style: "cancel" },
       {
-        text: "Yes",
+        text: "Đăng xuất",
         style: "destructive",
         onPress: async () => {
           try {
@@ -112,52 +84,9 @@ const AccountScreen = ({ navigation }) => {
     ]);
   };
 
-  const BoatyardCard = ({ item }) => (
-    <TouchableOpacity
-      style={updatedStyles.card}
-      onPress={() => navigation.navigate("BoatyardDetail", { id: item.id })}
-    >
-      <View style={updatedStyles.cardHeader}>
-        <Image
-          source={{
-            uri:
-              item.avatarUrl ||
-              "https://cdn-icons-png.flaticon.com/512/147/147144.png",
-          }}
-          style={updatedStyles.cardAvatar}
-        />
-        <View style={{ flex: 1 }}>
-          <Text style={updatedStyles.cardTitle}>{item.name}</Text>
-          <Text style={updatedStyles.cardSubtitle}>{item.fullName}</Text>
-        </View>
-        <Ionicons name="chevron-forward-outline" size={20} color="#5A6A7D" />
-      </View>
-      <View style={updatedStyles.infoGroup}>
-        <View style={updatedStyles.infoRow}>
-          <MaterialIcons name="email" size={16} color="#003d66" />
-          <Text style={updatedStyles.cardInfoText}>
-            {item.email || "No email"}
-          </Text>
-        </View>
-        <View style={updatedStyles.infoRow}>
-          <Ionicons name="location-outline" size={16} color="#003d66" />
-          <Text style={updatedStyles.cardInfoText}>
-            {item.address || "No address"}
-          </Text>
-        </View>
-        <View style={updatedStyles.infoRow}>
-          <Ionicons name="call-outline" size={16} color="#003d66" />
-          <Text style={updatedStyles.cardInfoText}>
-            {item.phoneNumber || "No phone"}
-          </Text>
-        </View>
-      </View>
-    </TouchableOpacity>
-  );
-
   const ShipCard = ({ ship }) => (
     <TouchableOpacity
-      style={updatedStyles.card}
+      style={styles.card}
       onPress={() =>
         navigation.navigate("ShipMapScreen", {
           name: ship.name,
@@ -166,39 +95,42 @@ const AccountScreen = ({ navigation }) => {
         })
       }
     >
-      <View style={updatedStyles.cardHeader}>
+      <View style={styles.cardHeader}>
         <Image
           source={{
             uri: "https://png.pngtree.com/png-vector/20250728/ourlarge/pngtree-vintage-trawler-fishing-boat-vector-icon-element-png-image_16880913.webp",
           }}
-          style={updatedStyles.cardAvatar}
+          style={styles.cardAvatar}
         />
         <View style={{ flex: 1 }}>
-          <Text style={updatedStyles.cardTitle}>{ship.name}</Text>
-          <Text style={updatedStyles.cardSubtitle}>
+          <Text style={styles.cardTitle}>{ship.name}</Text>
+          <Text style={styles.cardSubtitle}>
             IMO: {ship.imoNumber || "N/A"}
           </Text>
         </View>
         <Ionicons name="map-outline" size={20} color="#003d66" />
       </View>
-      <View style={updatedStyles.infoGroup}>
-        <View style={updatedStyles.infoRow}>
+
+      <View style={styles.infoGroup}>
+        <View style={styles.infoRow}>
           <MaterialIcons name="local-activity" size={16} color="#003d66" />
-          <Text style={updatedStyles.cardInfoText}>
+          <Text style={styles.cardInfoText}>
             Register No: {ship.registerNo}
           </Text>
         </View>
-        <View style={updatedStyles.infoRow}>
+        <View style={styles.infoRow}>
           <MaterialIcons name="business" size={16} color="#003d66" />
-          <Text style={updatedStyles.cardInfoText}>
-            Build Year: {ship.buildYear}
-          </Text>
+          <Text style={styles.cardInfoText}>Build Year: {ship.buildYear}</Text>
         </View>
-        <View style={updatedStyles.infoRow}>
+        <View style={styles.infoRow}>
           <Ionicons name="navigate-outline" size={16} color="#003d66" />
-          <Text style={updatedStyles.cardInfoText}>
-            Current Pos: ({parseFloat(ship.latitude).toFixed(3)},{" "}
-            {parseFloat(ship.longitude).toFixed(3)})
+          <Text style={styles.cardInfoText}>
+            Pos:{" "}
+            {ship.latitude && ship.longitude
+              ? `${parseFloat(ship.latitude).toFixed(3)}, ${parseFloat(
+                  ship.longitude
+                ).toFixed(3)}`
+              : "Unknown"}
           </Text>
         </View>
       </View>
@@ -208,11 +140,10 @@ const AccountScreen = ({ navigation }) => {
   const renderShipList = () => (
     <FlatList
       data={ships}
-      keyExtractor={(item) => item.id.toString()}
+      keyExtractor={(item, index) => `${item.id || index}-${index}`}
       renderItem={({ item }) => <ShipCard ship={item} />}
-      contentContainerStyle={{ paddingBottom: 100 }}
       onEndReached={loadMoreShips}
-      onEndReachedThreshold={0.2}
+      onEndReachedThreshold={0.3}
       ListHeaderComponent={
         <View style={styles.listHeaderContainer}>
           <Text style={styles.listHeaderTitle}>My Ships</Text>
@@ -225,173 +156,89 @@ const AccountScreen = ({ navigation }) => {
           </TouchableOpacity>
         </View>
       }
+      ListEmptyComponent={
+        !loading && (
+          <Text style={{ textAlign: "center", marginTop: 30 }}>
+            No ships found 🚢
+          </Text>
+        )
+      }
       ListFooterComponent={
-        loading ? (
+        loading && (
           <ActivityIndicator
             size="small"
             color="#003d66"
             style={{ marginVertical: 20 }}
           />
-        ) : null
-      }
-      ListEmptyComponent={
-        !loading && (
-          <Text style={{ textAlign: "center", marginTop: 30 }}>
-            No ships found. 🚢
-          </Text>
         )
       }
     />
   );
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: "#F0F4F8" }}>
+    <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" />
 
-      {activeTab === "SHIPS" ? (
-        <>
-          <View style={styles.bannerContainer}>
-            <Image
-              source={{
-                uri: "https://images.unsplash.com/photo-1501785888041-af3ef285b470?auto=format&fit=crop&w=900&q=60",
-              }}
-              style={styles.bannerImage}
-            />
-            <TouchableOpacity
-              style={styles.settingButton}
-              onPress={handleLogout}
+      <View style={styles.bannerContainer}>
+        <Image
+          source={{
+            uri: "https://images.unsplash.com/photo-1501785888041-af3ef285b470?auto=format&fit=crop&w=900&q=60",
+          }}
+          style={styles.bannerImage}
+        />
+        <TouchableOpacity style={styles.settingButton} onPress={handleLogout}>
+          <Ionicons name="settings-outline" size={22} color="#1C2A3A" />
+        </TouchableOpacity>
+      </View>
+
+      <View style={styles.profileSection}>
+        <Image
+          source={{ uri: "https://i.pravatar.cc/300" }}
+          style={styles.avatar}
+        />
+        <View style={styles.profileInfoContainer}>
+          <Text style={styles.name}>Samantha</Text>
+          <TouchableOpacity style={styles.editButton}>
+            <MaterialIcons name="edit" size={16} color="#003d66" />
+            <Text style={styles.editText}>Edit Profile</Text>
+          </TouchableOpacity>
+          <Text style={styles.interests}>
+            Vessel Management · Logistics · Cargo
+          </Text>
+        </View>
+      </View>
+
+      <View style={styles.tabRow}>
+        {["SHIPS", "DISCOUNT"].map((tab) => (
+          <TouchableOpacity
+            key={tab}
+            style={[
+              styles.tabButton,
+              activeTab === tab && styles.activeTabButton,
+            ]}
+            onPress={() => setActiveTab(tab)}
+          >
+            <Text
+              style={[
+                styles.tabText,
+                activeTab === tab && styles.activeTabText,
+              ]}
             >
-              <Ionicons name="settings-outline" size={22} color="#1C2A3A" />
-            </TouchableOpacity>
-          </View>
-
-          <View style={styles.profileSection}>
-            <Image
-              source={{ uri: "https://i.pravatar.cc/300" }}
-              style={styles.avatar}
-            />
-            <View style={styles.profileInfoContainer}>
-              <Text style={styles.name}>Samantha</Text>
-              <TouchableOpacity style={styles.editButton}>
-                <MaterialIcons name="edit" size={16} color="#003d66" />
-                <Text style={styles.editText}>Edit Profile</Text>
-              </TouchableOpacity>
-              <Text style={styles.interests}>
-                Vessel Management · Logistics · Cargo
-              </Text>
-              <Text style={styles.bio}>
-                Experienced professional in maritime logistics...
-                <Text style={{ color: "#003d66" }}> Detail</Text>
-              </Text>
-            </View>
-          </View>
-
-          <View style={styles.tabRow}>
-            {["BOATYARDS", "SHIPS", "DISCOUNT"].map((tab) => (
-              <TouchableOpacity
-                key={tab}
-                style={[
-                  styles.tabButton,
-                  activeTab === tab && styles.activeTabButton,
-                ]}
-                onPress={() => setActiveTab(tab)}
-              >
-                <Text
-                  style={[
-                    styles.tabText,
-                    activeTab === tab && styles.activeTabText,
-                  ]}
-                >
-                  {tab}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-
-          {renderShipList()}
-        </>
-      ) : (
-        <ScrollView
-          style={styles.container}
-          contentContainerStyle={{ paddingBottom: 90 }}
-          showsVerticalScrollIndicator={false}
-        >
-          <View style={styles.bannerContainer}>
-            <Image
-              source={{
-                uri: "https://images.unsplash.com/photo-1501785888041-af3ef285b470?auto=format&fit=crop&w=900&q=60",
-              }}
-              style={styles.bannerImage}
-            />
-            <TouchableOpacity
-              style={styles.settingButton}
-              onPress={handleLogout}
-            >
-              <Ionicons name="settings-outline" size={22} color="#1C2A3A" />
-            </TouchableOpacity>
-          </View>
-
-          <View style={styles.profileSection}>
-            <Image
-              source={{ uri: "https://i.pravatar.cc/300" }}
-              style={styles.avatar}
-            />
-            <View style={styles.profileInfoContainer}>
-              <Text style={styles.name}>Samantha</Text>
-              <TouchableOpacity style={styles.editButton}>
-                <MaterialIcons name="edit" size={16} color="#003d66" />
-                <Text style={styles.editText}>Edit Profile</Text>
-              </TouchableOpacity>
-              <Text style={styles.interests}>
-                Vessel Management · Logistics · Cargo
-              </Text>
-              <Text style={styles.bio}>
-                Experienced professional in maritime logistics...
-                <Text style={{ color: "#003d66" }}> Detail</Text>
-              </Text>
-            </View>
-          </View>
-
-          <View style={styles.tabRow}>
-            {["BOATYARDS", "SHIPS", "DISCOUNT"].map((tab) => (
-              <TouchableOpacity
-                key={tab}
-                style={[
-                  styles.tabButton,
-                  activeTab === tab && styles.activeTabButton,
-                ]}
-                onPress={() => setActiveTab(tab)}
-              >
-                <Text
-                  style={[
-                    styles.tabText,
-                    activeTab === tab && styles.activeTabText,
-                  ]}
-                >
-                  {tab}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-
-          {activeTab === "BOATYARDS" &&
-            (boatyards.length > 0 ? (
-              boatyards.map((item) => (
-                <BoatyardCard key={item.id} item={item} />
-              ))
-            ) : (
-              <Text style={{ textAlign: "center", marginTop: 40 }}>
-                No boatyards found ⚓
-              </Text>
-            ))}
-
-          {activeTab === "DISCOUNT" && (
-            <Text style={{ textAlign: "center", marginTop: 40 }}>
-              No discounts available yet 🏷️
+              {tab}
             </Text>
-          )}
-        </ScrollView>
-      )}
+          </TouchableOpacity>
+        ))}
+      </View>
+
+      <View style={styles.listContainer}>
+        {activeTab === "SHIPS" ? (
+          renderShipList()
+        ) : (
+          <View style={styles.centerBox}>
+            <Text>No discounts available 🏷️</Text>
+          </View>
+        )}
+      </View>
 
       <BottomNavBar activeScreen="Account" navigation={navigation} />
     </SafeAreaView>
@@ -401,160 +248,152 @@ const AccountScreen = ({ navigation }) => {
 export default AccountScreen;
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#F0F4F8" },
-  bannerContainer: { position: "relative" },
-  bannerImage: { width: "100%", height: 150 },
+  container: {
+    flex: 1,
+    backgroundColor: "#F7FAFC",
+  },
+  bannerContainer: {
+    position: "relative",
+    height: 180,
+  },
+  bannerImage: {
+    width: "100%",
+    height: "100%",
+    borderBottomLeftRadius: 25,
+    borderBottomRightRadius: 25,
+  },
   settingButton: {
     position: "absolute",
-    top: 40,
+    top: 15,
     right: 15,
-    backgroundColor: "rgba(255, 255, 255, 0.8)",
-    padding: 6,
-    borderRadius: 20,
+    backgroundColor: "#fff",
+    padding: 8,
+    borderRadius: 25,
+    elevation: 4,
   },
   profileSection: {
-    backgroundColor: "#FFFFFF",
-    marginHorizontal: 16,
-    marginTop: -40,
-    borderRadius: 16,
-    padding: 16,
     flexDirection: "row",
-    alignItems: "flex-start",
-    shadowColor: "#003d66",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 10,
-    elevation: 5,
+    alignItems: "center",
+    marginTop: -40,
+    marginHorizontal: 20,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 16,
+    padding: 15,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    elevation: 4,
   },
   avatar: {
     width: 70,
     height: 70,
-    borderRadius: 35,
-    marginRight: 12,
-    borderWidth: 2,
-    borderColor: "#003d66",
+    borderRadius: 50,
+    marginRight: 15,
   },
-  profileInfoContainer: { flex: 1 },
-  name: { color: "#1C2A3A", fontWeight: "700", fontSize: 18 },
-  buttonRow: { flexDirection: "row", alignItems: "center", marginTop: 8 },
+  profileInfoContainer: {
+    flex: 1,
+  },
+  name: {
+    fontSize: 20,
+    fontWeight: "bold",
+    color: "#1A202C",
+  },
   editButton: {
-    backgroundColor: "#E9EFF5",
-    borderRadius: 8,
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    alignSelf: 'flex-start', // Giữ nút co lại
+    marginTop: 4,
   },
-  editText: { color: "#003d66", marginLeft: 4, fontWeight: "600" },
-  interests: { color: "#5A6A7D", fontSize: 13, marginTop: 8 },
-  bio: { color: "#5A6A7D", fontSize: 13, marginTop: 6 },
+  editText: {
+    color: "#003d66",
+    marginLeft: 5,
+  },
+  interests: {
+    color: "#718096",
+    fontSize: 13,
+    marginTop: 4,
+  },
   tabRow: {
     flexDirection: "row",
-    justifyContent: "space-around",
-    marginTop: 20,
-    marginHorizontal: 16,
+    justifyContent: "center",
+    marginTop: 15,
     marginBottom: 8,
   },
   tabButton: {
-    flex: 1,
-    paddingVertical: 10,
-    paddingHorizontal: 10,
-    borderRadius: 12,
-    backgroundColor: "#FFFFFF",
-    marginHorizontal: 4,
-    alignItems: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 2,
+    paddingVertical: 8,
+    paddingHorizontal: 25,
+    borderRadius: 20,
+    backgroundColor: "#E2E8F0",
+    marginHorizontal: 5,
   },
   activeTabButton: {
     backgroundColor: "#003d66",
-    shadowColor: "#003d66",
-    shadowOpacity: 0.15,
-    shadowOffset: { width: 0, height: 4 },
-    shadowRadius: 5,
-    elevation: 5,
   },
   tabText: {
-    color: "#5A6A7D",
-    fontSize: 13,
-    fontWeight: "700",
+    color: "#1A202C",
+    fontWeight: "bold",
   },
   activeTabText: {
     color: "#FFFFFF",
   },
-  emptyTab: { alignItems: "center", justifyContent: "center", padding: 40 },
-  emptyTabText: { fontSize: 16, color: "#5A6A7D" },
+  listContainer: {
+    flex: 1,
+    paddingHorizontal: 15,
+  },
   listHeaderContainer: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginHorizontal: 16,
-    marginTop: 12,
-    marginBottom: 10,
+    marginVertical: 10,
   },
   listHeaderTitle: {
     fontSize: 18,
-    fontWeight: "700",
+    fontWeight: "bold",
     color: "#1C2A3A",
   },
   addButton: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#E9EFF5",
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 20,
+    backgroundColor: "#E6F0FA",
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
   },
   addButtonText: {
     color: "#005691",
+    marginLeft: 5,
     fontWeight: "600",
-    fontSize: 14,
-    marginLeft: 6,
   },
-});
-
-const updatedStyles = StyleSheet.create({
   card: {
     backgroundColor: "#FFFFFF",
-    marginHorizontal: 16,
-    marginTop: 12,
-    borderRadius: 16,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: "#E9EFF5",
-    shadowColor: "#003d66",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.08,
-    shadowRadius: 10,
-    elevation: 5,
+    borderRadius: 12,
+    marginBottom: 15,
+    padding: 15,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 4,
+    elevation: 3,
   },
   cardHeader: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 12,
-    paddingBottom: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: "#E9EFF5",
+    marginBottom: 10,
   },
   cardAvatar: {
     width: 50,
     height: 50,
     borderRadius: 25,
-    marginRight: 12,
+    marginRight: 10,
   },
   cardTitle: {
-    color: "#1C2A3A",
-    fontWeight: "700",
-    fontSize: 17,
+    fontSize: 16,
+    fontWeight: "bold",
+    color: "#1A202C",
   },
   cardSubtitle: {
-    color: "#5A6A7D",
-    fontSize: 13,
-    marginTop: 2,
+    fontSize: 12,
+    color: "#718096",
   },
   infoGroup: {
     marginTop: 8,
@@ -562,12 +401,16 @@ const updatedStyles = StyleSheet.create({
   infoRow: {
     flexDirection: "row",
     alignItems: "center",
-    marginTop: 8,
+    marginTop: 5,
   },
   cardInfoText: {
-    color: "#5A6A7D",
-    fontSize: 14,
-    marginLeft: 10,
-    flexShrink: 1, // Giúp text tự xuống hàng nếu quá dài
+    marginLeft: 6,
+    color: "#2D3748",
+    fontSize: 13,
+  },
+  centerBox: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
   },
 });
