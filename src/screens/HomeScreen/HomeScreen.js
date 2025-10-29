@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React from "react";
 import {
   View,
   Text,
@@ -8,52 +8,47 @@ import {
   Image,
   ScrollView,
   StatusBar,
-  Platform, 
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import BottomNavBar from "../../components/BottomNavBar";
-const Header = ({ title, user }) => (
-  <View style={styles.header}>
-    <View style={styles.headerLeft}>
-      <View style={styles.profileCircle}><Text style={styles.profileInitial}>{user}</Text></View>
-      <Text style={styles.headerTitle}>{title}</Text>
-    </View>
-    <TouchableOpacity>
-      <MaterialCommunityIcons name="bell-outline" size={24} color="#334155" />
-    </TouchableOpacity>
-  </View>
-);
+import Header from "../../components/Header";
 
-const services = [
-  { title: "Marine Freight", icon: require("../../assets/marine.jpg") },
-  { title: "Ocean Freight", icon: require("../../assets/ocean.jpg") },
-  { title: "Land Transport", icon: require("../../assets/land.png") },
-  { title: "Cargo Storage", icon: require("../../assets/cargo.jpg") },
+const factories = [
+  { id: 1, name: "Xưởng", image: require("../../assets/boatyard.png") },
 ];
 
-const HomeScreen = ({navigation}) => {
-  const [trackingId, setTrackingId] = useState("");
+const suppliers = [
+  { id: 1, name: "Nhà Cung Cấp", image: require("../../assets/supplier.jpg") },
+];
+
+const HomeScreen = ({ navigation }) => {
+  const [trackingId] = React.useState("");
 
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" />
-      <Header title="MaritimeHub" user="S" />
-      
+      <Header title="MaritimeHub" user="S" navigation={navigation} />
+
       <ScrollView showsVerticalScrollIndicator={false}>
         <View style={styles.content}>
           <Text style={styles.welcomeText}>Welcome back, Samantha</Text>
-          
-          <View style={styles.card}>
+
+          {/* --- Marine Tracking --- */}
+          <View style={styles.trackingCard}>
             <Text style={styles.cardTitle}>Marine Tracking</Text>
             <View style={styles.inputContainer}>
-              <MaterialCommunityIcons name="magnify" size={22} color="#A0AEC0" style={styles.inputIcon}/>
+              <MaterialCommunityIcons
+                name="magnify"
+                size={22}
+                color="#A0AEC0"
+                style={styles.inputIcon}
+              />
               <TextInput
                 style={styles.input}
                 placeholder="Enter Tracking ID"
                 placeholderTextColor="#A0AEC0"
                 value={trackingId}
-                onChangeText={setTrackingId}
               />
             </View>
             <TouchableOpacity style={styles.trackButton}>
@@ -61,19 +56,87 @@ const HomeScreen = ({navigation}) => {
             </TouchableOpacity>
           </View>
 
-          <Text style={styles.sectionTitle}>Our Services</Text>
-          <View style={styles.servicesGrid}>
-            {services.map((service, index) => (
-              <TouchableOpacity key={index} style={styles.serviceCard}>
-                <Image source={service.icon} style={styles.serviceIcon} />
-                <Text style={styles.serviceText}>{service.title}</Text>
-              </TouchableOpacity>
-            ))}
+          {/* --- Feature Boxes --- */}
+          <View style={styles.featureSection}>
+            {/* --- FIND FACTORIES --- */}
+            <View style={styles.featureColumn}>
+              <View style={styles.featureBox}>
+                <View style={styles.boxHeader}>
+                  <Text style={styles.boxTitle}>TÌM XƯỞNG SẢN XUẤT</Text>
+                  <TouchableOpacity
+                    onPress={() => navigation.navigate("BoatyardsList")}
+                  >
+                    <MaterialCommunityIcons
+                      name="arrow-right"
+                      size={20}
+                      color="#005f73"
+                    />
+                  </TouchableOpacity>
+                </View>
+
+                {factories.map((item, index) => (
+                  <TouchableOpacity
+                    key={`factory-item-${item.id}-${index}`}
+                    style={[
+                      styles.itemCard,
+                      index === factories.length - 1 && { marginBottom: 0 },
+                    ]}
+                    onPress={() => navigation.navigate("BoatyardsList")}
+                  >
+                    <Image source={item.image} style={styles.itemImage} />
+                    <View style={styles.itemOverlay} />
+                    <Text style={styles.itemText}>{item.name}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+
+            <View style={styles.featureColumn}>
+              <View style={styles.featureBox}>
+                <View style={styles.boxHeader}>
+                  <Text style={styles.boxTitle}>TÌM NHÀ CUNG CẤP</Text>
+                  <TouchableOpacity>
+                    <MaterialCommunityIcons
+                      name="arrow-right"
+                      size={20}
+                      color="#005f73"
+                    />
+                  </TouchableOpacity>
+                </View>
+
+                {suppliers.map((item, index) => (
+                  <TouchableOpacity
+                    key={`supplier-item-${item.id}-${index}`}
+                    style={[
+                      styles.itemCard,
+                      index === suppliers.length - 1 && { marginBottom: 0 },
+                    ]}
+                  >
+                    <Image source={item.image} style={styles.itemImage} />
+                    <View style={styles.itemOverlay} />
+                    <Text style={styles.itemText}>{item.name}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+          </View>
+          <View style={styles.placeholderCard}>
+            <MaterialCommunityIcons
+              name="package-variant-closed"
+              size={32}
+              color="#A0AEC0"
+            />
+            <View style={styles.placeholderTextBox}>
+              <Text style={styles.placeholderText}>Tìm kiếm Sản phẩm</Text>
+              <Text style={styles.placeholderSubText}>
+                Tính năng sắp ra mắt
+              </Text>
+            </View>
           </View>
         </View>
       </ScrollView>
-      
-  <BottomNavBar activeScreen="Home" navigation={navigation} />
+
+      <BottomNavBar activeScreen="Home" navigation={navigation} />
     </SafeAreaView>
   );
 };
@@ -83,73 +146,43 @@ export default HomeScreen;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F0F4F8',
+    backgroundColor: "#F7FAFC",
   },
   content: {
-    paddingHorizontal: 20,
-    paddingBottom: 80,
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 15,
-  },
-  headerLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  profileCircle: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#003d66',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 12,
-  },
-  profileInitial: {
-    color: '#FFFFFF',
-    fontWeight: 'bold',
-    fontSize: 18,
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#1C2A3A',
+    paddingHorizontal: 15,
+    paddingBottom: 100,
   },
   welcomeText: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#1C2A3A',
+    fontSize: 26,
+    fontWeight: "bold",
+    color: "#1A202C",
     marginTop: 10,
     marginBottom: 20,
   },
-  card: {
-    backgroundColor: '#FFFFFF',
+  trackingCard: {
+    backgroundColor: "#FFFFFF",
     borderRadius: 16,
     padding: 20,
-    marginBottom: 30,
+    marginBottom: 25,
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.05,
+    shadowRadius: 10,
     elevation: 5,
   },
   cardTitle: {
     fontSize: 18,
-    fontWeight: 'bold',
-    color: '#1C2A3A',
+    fontWeight: "bold",
+    color: "#1C2A3A",
     marginBottom: 15,
   },
   inputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#F7FAFC',
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#F7FAFC",
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: "#E2E8F0",
     marginBottom: 15,
   },
   inputIcon: {
@@ -160,83 +193,95 @@ const styles = StyleSheet.create({
     height: 50,
     paddingHorizontal: 10,
     fontSize: 16,
-    color: '#1C2A3A',
+    color: "#1C2A3A",
   },
   trackButton: {
-    backgroundColor: '#003d66',
-    padding: 15,
+    backgroundColor: "#003d66",
+    paddingVertical: 15,
     borderRadius: 12,
-    alignItems: 'center',
+    alignItems: "center",
   },
   trackButtonText: {
-    color: '#FFFFFF',
-    fontWeight: 'bold',
+    color: "#FFFFFF",
+    fontWeight: "bold",
     fontSize: 16,
   },
-  sectionTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#1C2A3A',
-    marginBottom: 15,
+  featureSection: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 25,
+    alignItems: "flex-start",
   },
-  servicesGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
+  featureColumn: {
+    width: "48.5%",
   },
-  serviceCard: {
-    width: '48%',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    padding: 15,
-    marginBottom: 15,
-    alignItems: 'center',
+  featureBox: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 12,
+    padding: 12,
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.08,
-    shadowRadius: 5,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 4,
   },
-  serviceIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+  boxHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginBottom: 12,
   },
-  serviceText: {
-    fontWeight: '600',
-    fontSize: 14,
-    color: '#334155',
-    textAlign: 'center',
+  boxTitle: {
+    fontSize: 10,
+    fontWeight: "bold",
+    color: "#2D3748",
   },
-  bottomNav: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    backgroundColor: '#FFFFFF',
-    borderTopWidth: 1,
-    borderColor: '#E2E8F0',
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    paddingTop: 10,
-    paddingBottom: Platform.OS === 'ios' ? 20 : 10,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: -2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 5,
-    elevation: 10,
+  itemCard: {
+    width: "100%",
+    height: 160,
+    borderRadius: 10,
+    marginBottom: 10,
+    overflow: "hidden",
+    justifyContent: "flex-end",
   },
-  navItem: {
-    alignItems: 'center',
+  itemImage: {
+    ...StyleSheet.absoluteFillObject,
+    width: "100%",
+    height: "100%",
   },
-  navText: {
-    fontSize: 12,
-    color: '#A0AEC0',
+  itemOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(0,0,0,0.3)",
   },
-  navTextActive: {
-    fontSize: 12,
-    fontWeight: 'bold',
-    color: '#003d66',
+  itemText: {
+    color: "#FFFFFF",
+    fontWeight: "bold",
+    fontSize: 15,
+    margin: 10,
+    textShadowColor: "rgba(0, 0, 0, 0.75)",
+    textShadowOffset: { width: -1, height: 1 },
+    textShadowRadius: 10,
+  },
+  placeholderCard: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 16,
+    padding: 20,
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  placeholderTextBox: {
+    marginLeft: 15,
+  },
+  placeholderText: {
+    fontSize: 16,
+    fontWeight: "bold",
+    color: "#4A5568",
+  },
+  placeholderSubText: {
+    fontSize: 13,
+    color: "#A0AEC0",
+    marginTop: 2,
   },
 });
