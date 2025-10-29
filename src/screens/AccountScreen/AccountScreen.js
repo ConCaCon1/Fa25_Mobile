@@ -8,14 +8,14 @@ import {
   StatusBar,
   Alert,
   ActivityIndicator,
-  FlatList,
 } from "react-native";
 import { Ionicons, MaterialIcons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import BottomNavBar from "../../components/BottomNavBar";
-import { apiGet } from "../../ultis/api";
+import { apiGet, apiPatch } from "../../ultis/api";
 import { useIsFocused } from "@react-navigation/native";
+import { SwipeListView } from "react-native-swipe-list-view";
 
 const AccountScreen = ({ navigation }) => {
   const [activeTab, setActiveTab] = useState("SHIPS");
@@ -37,11 +37,15 @@ const AccountScreen = ({ navigation }) => {
   const fetchShips = async (pageNum = 1, reset = false) => {
     try {
       setLoading(true);
-      const json = await apiGet(`/ships?page=${pageNum}&size=5`);
-      const newShips = json?.data?.items || [];
+      const json = await apiGet(`/ships?page=${pageNum}&size=5&deleted=false`);
+     const newShips = Array.isArray(json?.data?.items)
+  ? json.data.items.filter((s) => !s.deleted)
+  : [];
+
 
       setShips((prev) => {
-        const merged = reset ? newShips : [...prev, ...newShips];
+        const safePrev = Array.isArray(prev) ? prev : [];
+        const merged = reset ? newShips : [...safePrev, ...newShips];
         const uniqueShips = merged.filter(
           (v, i, a) => a.findIndex((t) => t.id === v.id) === i
         );
@@ -50,6 +54,7 @@ const AccountScreen = ({ navigation }) => {
       });
     } catch (err) {
       console.log("❌ Error fetching ships:", err);
+      setShips([]);
     } finally {
       setLoading(false);
     }
@@ -83,6 +88,43 @@ const AccountScreen = ({ navigation }) => {
       },
     ]);
   };
+
+  const handleDeleteShip = async (shipId) => {
+    Alert.alert("Xác nhận", "Bạn có chắc chắn muốn xóa tàu này không?", [
+      { text: "Hủy", style: "cancel" },
+      {
+        text: "Xóa",
+        style: "destructive",
+        onPress: async () => {
+          try {
+            console.log("🗑️ Gửi yêu cầu PATCH /ships/" + shipId);
+            const result = await apiPatch(`/ships/${shipId}`, {
+              deleted: true,
+            });
+
+            console.log("✅ Ship deleted:", result);
+            setShips((prev) => prev.filter((s) => s.id !== shipId));
+            Alert.alert("✅ Thành công", "Đã xóa tàu thành công!");
+          } catch (error) {
+            console.error("❌ Lỗi xóa tàu:", error);
+            Alert.alert("❌ Thất bại", "Không thể xóa tàu. Thử lại sau.");
+          }
+        },
+      },
+    ]);
+  };
+
+  const renderHiddenItem = (data) => (
+    <View style={styles.rowBack}>
+      <TouchableOpacity
+        style={styles.deleteButton}
+        onPress={() => handleDeleteShip(data.item.id)}
+      >
+        <Ionicons name="trash-outline" size={24} color="#fff" />
+        <Text style={styles.deleteText}>Delete</Text>
+      </TouchableOpacity>
+    </View>
+  );
 
   const ShipCard = ({ ship }) => (
     <TouchableOpacity
@@ -138,10 +180,13 @@ const AccountScreen = ({ navigation }) => {
   );
 
   const renderShipList = () => (
-    <FlatList
-      data={ships}
+    <SwipeListView
+      data={ships || []}
       keyExtractor={(item, index) => `${item.id || index}-${index}`}
       renderItem={({ item }) => <ShipCard ship={item} />}
+      renderHiddenItem={renderHiddenItem} 
+      rightOpenValue={-80} 
+      disableRightSwipe={true} 
       onEndReached={loadMoreShips}
       onEndReachedThreshold={0.3}
       ListHeaderComponent={
@@ -247,11 +292,13 @@ const AccountScreen = ({ navigation }) => {
 
 export default AccountScreen;
 
+// CẬP NHẬT STYLESHEET
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#F7FAFC",
   },
+  // ... (giữ nguyên các style từ bannerContainer đến cardInfoText)
   bannerContainer: {
     position: "relative",
     height: 180,
@@ -365,7 +412,7 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   card: {
-    backgroundColor: "#FFFFFF",
+    backgroundColor: "#FFFFFF", // Quan trọng: card phải có nền che đi nút delete
     borderRadius: 12,
     marginBottom: 15,
     padding: 15,
@@ -407,6 +454,31 @@ const styles = StyleSheet.create({
     marginLeft: 6,
     color: "#2D3748",
     fontSize: 13,
+  },
+
+  rowBack: {
+    alignItems: "center",
+    backgroundColor: "#F7FAFC",
+    flex: 1,
+    flexDirection: "row",
+    justifyContent: "flex-end", // Đẩy nút delete sang phải
+    marginBottom: 15, // Khớp với margin của card
+    borderRadius: 12,
+  },
+  deleteButton: {
+    backgroundColor: "#FF3B30",
+    justifyContent: "center",
+    alignItems: "center",
+    width: 80,
+    height: "100%",
+    borderTopRightRadius: 12,
+    borderBottomRightRadius: 12,
+  },
+  deleteText: {
+    color: "#fff",
+    fontSize: 13,
+    fontWeight: "600",
+    marginTop: 2,
   },
   centerBox: {
     flex: 1,
