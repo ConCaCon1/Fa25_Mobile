@@ -1,10 +1,13 @@
 import { StatusBar } from 'expo-status-bar';
 import { StyleSheet, Text, View } from 'react-native';
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 import AppNavigator from './src/navigation/AppNavigator';
 
 export default function App() {
   return (
-     <AppNavigator />
+        <GestureHandlerRootView style={{ flex: 1 }}>
+      <AppNavigator />
+    </GestureHandlerRootView>
   );
 }
 

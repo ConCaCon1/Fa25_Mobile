@@ -46,6 +46,11 @@ export const apiPut = (endpoint, body) =>
     method: "PUT",
     body: JSON.stringify(body),
   });
+export const apiPatch = (endpoint, body) =>
+  fetchWithAuth(endpoint, {
+    method: "PATCH",
+    body: JSON.stringify(body),
+  });
 
 export const apiDelete = (endpoint) =>
   fetchWithAuth(endpoint, { method: "DELETE" });
