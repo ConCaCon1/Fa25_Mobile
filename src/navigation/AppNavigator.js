@@ -5,7 +5,14 @@ import RegisterScreen from "../screens/RegisterScreen/RegisterScreen";
 import LoginScreen from "../screens/LoginScreen/LoginScreen";
 import OTPScreen from "../screens/OTPScreen/OTPScreen";
 import GoogleTestScreen from "../screens/GoogleTestScreen/GoogleTestScreen";
-
+import MapScreen from "../screens/MapScreen/MapScreen";
+import AccountScreen from "../screens/AccountScreen/AccountScreen";
+import HistoryScreen from "../screens/HistoryScreen.js/HistoryScreen";
+import NotificationScreen from "../screens/NotificationScreen/NotificationScreen";
+import BoatyardDetailsScreen from "../screens/BoatyardDetailsScreen/BoatyardDetailsScreen";
+import ShipMapScreen from "../screens/ShipMapScreen/ShipMapScreen";
+import AddShipScreen from "../screens/AddShipScreen/AddShipScreen";
+import BoatyardsListScreen from "../screens/BoatyardsListScreen/BoatyardsListScreen";
 
 const Stack = createNativeStackNavigator();
 
@@ -22,7 +29,15 @@ export default function AppNavigator() {
         <Stack.Screen name="Home" component={HomeScreen} />
         <Stack.Screen name="Register" component={RegisterScreen} />
         <Stack.Screen name="OTPScreen" component={OTPScreen} />
+        <Stack.Screen name="MapScreen" component={MapScreen} />
         <Stack.Screen name="GoogleTest" component={GoogleTestScreen} />
+        <Stack.Screen name="Account" component={AccountScreen} />
+        <Stack.Screen name="History" component={HistoryScreen} />
+        <Stack.Screen name="Notification" component={NotificationScreen} />
+        <Stack.Screen name="BoatyardDetail" component={BoatyardDetailsScreen} />
+        <Stack.Screen name="ShipMapScreen" component={ShipMapScreen} />
+        <Stack.Screen name="AddShipScreen" component={AddShipScreen} />
+        <Stack.Screen name="BoatyardsList" component={BoatyardsListScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );
