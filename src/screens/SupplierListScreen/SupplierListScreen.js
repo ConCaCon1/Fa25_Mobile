@@ -13,34 +13,36 @@ import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { apiGet } from "../../ultis/api";
 
-const BoatyardsListScreen = ({ navigation }) => {
-  const [boatyards, setBoatyards] = useState([]);
+const SupplierListScreen = ({ navigation }) => {
+  const [suppliers, setSuppliers] = useState([]);
   const [filtered, setFiltered] = useState([]);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    const fetchBoatyards = async () => {
+    const fetchSuppliers = async () => {
       try {
         setLoading(true);
-        const json = await apiGet("/boatyards?page=1&size=30");
+        const json = await apiGet("/suppliers?page=1&size=30");
         if (json?.data?.items) {
-          setBoatyards(json.data.items);
+          setSuppliers(json.data.items);
           setFiltered(json.data.items);
         }
       } catch (error) {
-        console.log("Error fetching boatyards:", error);
+        console.log("Error fetching suppliers:", error);
       } finally {
         setLoading(false);
       }
     };
-    fetchBoatyards();
+    fetchSuppliers();
   }, []);
 
   const handleSearch = (text) => {
     setSearch(text);
-    const filteredData = boatyards.filter((item) =>
-      item.name.toLowerCase().includes(text.toLowerCase())
+    const filteredData = suppliers.filter(
+      (item) =>
+        item.name.toLowerCase().includes(text.toLowerCase()) ||
+        item.fullName.toLowerCase().includes(text.toLowerCase())
     );
     setFiltered(filteredData);
   };
@@ -48,7 +50,7 @@ const BoatyardsListScreen = ({ navigation }) => {
   const renderItem = ({ item }) => (
     <TouchableOpacity
       style={styles.card}
-      onPress={() => navigation.navigate("BoatyardDetail", { id: item.id })}
+      onPress={() => navigation.navigate("SupplierDetail", { id: item.id })}
     >
       <Image
         source={{
@@ -60,8 +62,9 @@ const BoatyardsListScreen = ({ navigation }) => {
       />
       <View style={styles.infoContainer}>
         <Text style={styles.name}>{item.name}</Text>
+        <Text style={styles.contact}>{item.fullName}</Text>
         <Text style={styles.address} numberOfLines={2}>
-          {item.address || "No address"}
+          {item.address || "Chưa có địa chỉ"}
         </Text>
       </View>
       <Ionicons name="chevron-forward-outline" size={22} color="#A0AEC0" />
@@ -72,14 +75,15 @@ const BoatyardsListScreen = ({ navigation }) => {
     <View style={styles.emptyContainer}>
       <Text style={styles.emptyText}>
         {search
-          ? "No results found for your search 😢"
-          : "No boatyards found ⚓"}
+          ? "Không tìm thấy nhà cung cấp nào 😢"
+          : "Chưa có dữ liệu nhà cung cấp ⚓"}
       </Text>
     </View>
   );
 
   return (
     <SafeAreaView style={styles.container}>
+      {/* Header có nút Back */}
       <View style={styles.headerContainer}>
         <TouchableOpacity
           style={styles.backButton}
@@ -87,9 +91,10 @@ const BoatyardsListScreen = ({ navigation }) => {
         >
           <Ionicons name="arrow-back-outline" size={24} color="#1C2A3A" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Tất cả xưởng tàu</Text>
+        <Text style={styles.headerTitle}>Tất cả nhà cung cấp</Text>
       </View>
 
+      {/* Ô tìm kiếm */}
       <View style={styles.searchContainer}>
         <Ionicons
           name="search-outline"
@@ -99,19 +104,16 @@ const BoatyardsListScreen = ({ navigation }) => {
         />
         <TextInput
           style={styles.searchInput}
-          placeholder="Search boatyard by name..."
+          placeholder="Tìm nhà cung cấp theo tên..."
           placeholderTextColor="#8A9AAD"
           value={search}
           onChangeText={handleSearch}
         />
       </View>
 
+      {/* Danh sách nhà cung cấp */}
       {loading ? (
-        <ActivityIndicator
-          size="large"
-          color="#003d66"
-          style={{ flex: 1 }}
-        />
+        <ActivityIndicator size="large" color="#003d66" style={{ flex: 1 }} />
       ) : (
         <FlatList
           data={filtered}
@@ -125,12 +127,12 @@ const BoatyardsListScreen = ({ navigation }) => {
   );
 };
 
-export default BoatyardsListScreen;
+export default SupplierListScreen;
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F5F9FC", 
+    backgroundColor: "#F5F9FC",
   },
   headerContainer: {
     flexDirection: "row",
@@ -157,7 +159,7 @@ const styles = StyleSheet.create({
   searchContainer: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#F7F9FA", 
+    backgroundColor: "#F7F9FA",
     borderRadius: 12,
     borderWidth: 1,
     borderColor: "#E0E6ED",
@@ -205,7 +207,12 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     fontSize: 17,
     color: "#1C2A3A",
-    marginBottom: 4,
+    marginBottom: 2,
+  },
+  contact: {
+    fontSize: 14,
+    color: "#5A6A7D",
+    marginBottom: 3,
   },
   address: {
     color: "#5A6A7D",
@@ -215,7 +222,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    paddingTop: 100, 
+    paddingTop: 100,
   },
   emptyText: {
     fontSize: 16,

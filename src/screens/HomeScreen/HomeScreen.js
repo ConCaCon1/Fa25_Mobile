@@ -34,7 +34,6 @@ const HomeScreen = ({ navigation }) => {
         <View style={styles.content}>
           <Text style={styles.welcomeText}>Welcome back, Samantha</Text>
 
-          {/* --- Marine Tracking --- */}
           <View style={styles.trackingCard}>
             <Text style={styles.cardTitle}>Marine Tracking</Text>
             <View style={styles.inputContainer}>
@@ -56,9 +55,8 @@ const HomeScreen = ({ navigation }) => {
             </TouchableOpacity>
           </View>
 
-          {/* --- Feature Boxes --- */}
           <View style={styles.featureSection}>
-            {/* --- FIND FACTORIES --- */}
+            {/* ----------- Cột XƯỞNG ----------- */}
             <View style={styles.featureColumn}>
               <View style={styles.featureBox}>
                 <View style={styles.boxHeader}>
@@ -91,11 +89,14 @@ const HomeScreen = ({ navigation }) => {
               </View>
             </View>
 
+            {/* ----------- Cột NHÀ CUNG CẤP ----------- */}
             <View style={styles.featureColumn}>
               <View style={styles.featureBox}>
                 <View style={styles.boxHeader}>
                   <Text style={styles.boxTitle}>TÌM NHÀ CUNG CẤP</Text>
-                  <TouchableOpacity>
+                  <TouchableOpacity
+                    onPress={() => navigation.navigate("SupplierList")}
+                  >
                     <MaterialCommunityIcons
                       name="arrow-right"
                       size={20}
@@ -111,6 +112,7 @@ const HomeScreen = ({ navigation }) => {
                       styles.itemCard,
                       index === suppliers.length - 1 && { marginBottom: 0 },
                     ]}
+                    onPress={() => navigation.navigate("SupplierList")}
                   >
                     <Image source={item.image} style={styles.itemImage} />
                     <View style={styles.itemOverlay} />
@@ -120,6 +122,7 @@ const HomeScreen = ({ navigation }) => {
               </View>
             </View>
           </View>
+
           <View style={styles.placeholderCard}>
             <MaterialCommunityIcons
               name="package-variant-closed"
