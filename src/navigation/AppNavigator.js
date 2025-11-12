@@ -15,6 +15,7 @@ import AddShipScreen from "../screens/AddShipScreen/AddShipScreen";
 import BoatyardsListScreen from "../screens/BoatyardsListScreen/BoatyardsListScreen";
 import SupplierListScreen from "../screens/SupplierListScreen/SupplierListScreen";
 import SupplierDetailScreen from "../screens/SupplierDetailScreen/SupplierDetailScreen";
+import AddCaptainScreen from "../screens/AddCaptainScreen/AddCaptainScreen";
 
 const Stack = createNativeStackNavigator();
 
@@ -42,6 +43,7 @@ export default function AppNavigator() {
         <Stack.Screen name="BoatyardsList" component={BoatyardsListScreen} />
         <Stack.Screen name="SupplierList" component={SupplierListScreen} />
         <Stack.Screen name="SupplierDetail" component={SupplierDetailScreen} />
+        <Stack.Screen name ="AddCaptainScreen" component={AddCaptainScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );

@@ -54,3 +54,24 @@ export const apiPatch = (endpoint, body) =>
 
 export const apiDelete = (endpoint) =>
   fetchWithAuth(endpoint, { method: "DELETE" });
+export const apiPostFormData = async (endpoint, formData) => {
+  const token = await getToken(); 
+  const headers = {
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  };
+
+  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+    method: "POST",
+    headers,
+    body: formData,
+  });
+
+  if (!response.ok) {
+    const errText = await response.text(); 
+    console.error("❌ API Error Response:", errText);
+    throw new Error(`API error ${response.status}`);
+  }
+
+  const json = await response.json();
+  return json;
+};
