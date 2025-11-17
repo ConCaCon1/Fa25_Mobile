@@ -10,7 +10,43 @@ const MapScreen = ({ navigation }) => {
   const webviewRef = useRef(null);
   const [query, setQuery] = useState('');
 
+  // ------------------------------------------------------------
+  // 📌 HÀM GỬI DANH SÁCH ĐỊA ĐIỂM (TẠO NHIỀU MARKER)
+  // ------------------------------------------------------------
+  const showLocations = (locations) => {
+    const js = `
+      (function(){
+        // Xóa marker cũ
+        if (window.multiMarkers) {
+          window.multiMarkers.forEach(m => m.remove());
+        }
+        window.multiMarkers = [];
+
+        const data = ${JSON.stringify(locations)};
+
+        data.forEach(item => {
+          const marker = new maplibregl.Marker({ color: 'green' })
+            .setLngLat([item.lng, item.lat])
+            .setPopup(new maplibregl.Popup().setText(item.name))
+            .addTo(map);
+
+          window.multiMarkers.push(marker);
+        });
+      })();
+    `;
+
+    webviewRef.current.injectJavaScript(js);
+  };
+
+  const testLocations = [
+    { id: 1, name: "Bến Nhà Rồng", lat: 10.6, lng: 10.4 },
+    { id: 2, name: "Landmark 81", lat: 10.7946, lng: 106.7223 },
+    { id: 3, name: "Chợ Bến Thành", lat: 10.7723, lng: 106.6983 },
+  ];
+
   const handleMapLoaded = async () => {
+    showLocations(testLocations);
+
     let { status } = await Location.requestForegroundPermissionsAsync();
     if (status !== 'granted') {
       Alert.alert('Permission denied', 'Không thể truy cập vị trí của bạn.');
@@ -35,8 +71,10 @@ const MapScreen = ({ navigation }) => {
     webviewRef.current.injectJavaScript(js);
   };
 
+
   const handleSearch = () => {
     if (!query) return;
+
     const js = `
       (async function() {
         try {
@@ -46,6 +84,7 @@ const MapScreen = ({ navigation }) => {
             const place = autoData.predictions[0];
             const detailRes = await fetch("https://rsapi.goong.io/place/detail?api_key=${VITE_GOONG_API_KEY}&place_id=" + place.place_id);
             const detailData = await detailRes.json();
+
             if(detailData.result){
               const loc = detailData.result.geometry.location;
 
@@ -63,6 +102,7 @@ const MapScreen = ({ navigation }) => {
                   "&destination=" + loc.lat + "," + loc.lng +
                   "&vehicle=car&api_key=${VITE_GOONG_API_KEY}"
                 );
+
                 const routeData = await routeRes.json();
 
                 if(routeData && routeData.routes && routeData.routes.length > 0){
@@ -133,6 +173,7 @@ const MapScreen = ({ navigation }) => {
     webviewRef.current.injectJavaScript(js);
   };
 
+
   const handleMessage = (event) => {
     try {
       const data = JSON.parse(event.nativeEvent.data);
@@ -144,12 +185,13 @@ const MapScreen = ({ navigation }) => {
     } catch {}
   };
 
+
   const html = `
     <!DOCTYPE html>
     <html>
       <head>
         <meta charset="utf-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta name="viewport" content="width=device-width">
         <style>
           body, html { margin: 0; padding: 0; height: 100%; width: 100%; }
           #map { position: absolute; top:0; bottom:0; width:100%; }
@@ -157,8 +199,10 @@ const MapScreen = ({ navigation }) => {
         <script src="https://unpkg.com/maplibre-gl/dist/maplibre-gl.js"></script>
         <link href="https://unpkg.com/maplibre-gl/dist/maplibre-gl.css" rel="stylesheet"/>
       </head>
+
       <body>
         <div id="map"></div>
+
         <script>
           const map = new maplibregl.Map({
             container: 'map',
@@ -166,23 +210,24 @@ const MapScreen = ({ navigation }) => {
             center: [106.660172, 10.762622],
             zoom: 12
           });
+
           map.addControl(new maplibregl.NavigationControl());
 
-          // Khi người dùng click vào bản đồ => hiển thị marker xanh + thông tin
+          // CLICK TRÊN MAP
           map.on('click', async (e) => {
             const lng = e.lngLat.lng;
             const lat = e.lngLat.lat;
 
             if(window.searchMarker) window.searchMarker.remove();
+
             window.searchMarker = new maplibregl.Marker({ color: 'blue' })
               .setLngLat([lng, lat])
               .addTo(map);
 
-            // Gọi API reverse geocoding để lấy địa chỉ
             try {
               const res = await fetch("https://rsapi.goong.io/Geocode?latlng=" + lat + "," + lng + "&api_key=${VITE_GOONG_API_KEY}");
               const data = await res.json();
-              const address = data.results && data.results.length > 0 ? data.results[0].formatted_address : '';
+              const address = data.results?.[0]?.formatted_address || '';
               window.ReactNativeWebView.postMessage(JSON.stringify({ lat, lng, address }));
             } catch {
               window.ReactNativeWebView.postMessage(JSON.stringify({ lat, lng }));

@@ -16,7 +16,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
 
 import { API_BASE_URL } from "@env";
-import { saveToken } from "../../auth/authStorage";
+import { saveToken, saveRole } from "../../auth/authStorage";
 
 const LoginScreen = ({ navigation }) => {
   const [usernameOrEmail, setUsernameOrEmail] = useState("");
@@ -45,8 +45,20 @@ const LoginScreen = ({ navigation }) => {
 
       if (response.ok && data.data?.accessToken) {
         await saveToken(data.data.accessToken);
+        if (data.data?.role) {
+          await saveRole(data.data.role);
+        }
         Alert.alert("Success", "Login successful!", [
-          { text: "OK", onPress: () => navigation.replace("Home") },
+          {
+            text: "OK",
+            onPress: () => {
+              if (data.data.role === "Captain") {
+                navigation.replace("CaptainAccount");
+              } else {
+                navigation.replace("Home");
+              }
+            },
+          },
         ]);
       } else {
         Alert.alert("Login Failed", data.message || "Invalid credentials");

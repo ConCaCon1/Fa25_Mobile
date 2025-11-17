@@ -14,7 +14,7 @@ import {
 import { Ionicons, Feather } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { apiGet } from "../../ultis/api";
-import GoongMapView from "../../components/GoongMapView"; // 👈 dùng component riêng
+import GoongMapView from "../../components/GoongMapView"; 
 
 const DetailItem = ({ iconName, label, value }) => (
   <View style={styles.detailItemContainer}>

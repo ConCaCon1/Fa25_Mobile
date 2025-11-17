@@ -29,7 +29,10 @@ const AddCaptainScreen = ({ navigation }) => {
   const pickImage = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== "granted") {
-      Alert.alert("Quyền truy cập bị từ chối", "Vui lòng cấp quyền truy cập ảnh.");
+      Alert.alert(
+        "Quyền truy cập bị từ chối",
+        "Vui lòng cấp quyền truy cập ảnh."
+      );
       return;
     }
 
@@ -44,55 +47,52 @@ const AddCaptainScreen = ({ navigation }) => {
     }
   };
 
-
-const handleCreateCaptain = async () => {
-  if (!fullName || !username || !email || !password || !address || !phoneNumber) {
-    Alert.alert("Thiếu thông tin", "Vui lòng nhập đầy đủ các trường.");
-    return;
-  }
-
-  try {
-    setLoading(true);
-
-    const formData = new FormData();
-    formData.append("FullName", fullName);
-    formData.append("Username", username);
-    formData.append("Email", email);
-    formData.append("Password", password);
-    formData.append("Address", address);
-    formData.append("PhoneNumber", phoneNumber);
-
-    if (avatar) {
-      formData.append("Avatar", {
-        uri: avatar.uri,
-        type: "image/jpeg",
-        name: "avatar.jpg",
-      });
+  const handleCreateCaptain = async () => {
+    if (
+      !fullName ||
+      !username ||
+      !email ||
+      !password ||
+      !address ||
+      !phoneNumber
+    ) {
+      Alert.alert("Thiếu thông tin", "Vui lòng nhập đầy đủ các trường.");
+      return;
     }
 
-    const res = await apiPostFormData("/captains", formData);
+    try {
+      setLoading(true);
 
-    // ✅ res.data có dạng:
-    // {
-    //   accountId, username, email, accessToken, role
-    // }
+      const formData = new FormData();
+      formData.append("FullName", fullName);
+      formData.append("Username", username);
+      formData.append("Email", email);
+      formData.append("Password", password);
+      formData.append("Address", address);
+      formData.append("PhoneNumber", phoneNumber);
 
-    console.log("🚀 Created captain:", res.data);
-    Alert.alert("Thành công", `Đã tạo thuyền trưởng: ${res.data.username}`);
-    navigation.goBack();
-  } catch (error) {
-    console.error("❌ Lỗi tạo captain:", error);
-    Alert.alert("Thất bại", "Không thể tạo thuyền trưởng, vui lòng thử lại!");
-  } finally {
-    setLoading(false);
-  }
-};
-
+      if (avatar) {
+        formData.append("Avatar", {
+          uri: avatar.uri,
+          type: "image/jpeg",
+          name: "avatar.jpg",
+        });
+      }
+      const res = await apiPostFormData("/captains", formData);
+      console.log("🚀 Created captain:", res.data);
+      Alert.alert("Thành công", `Đã tạo thuyền trưởng: ${res.data.username}`);
+      navigation.goBack();
+    } catch (error) {
+      console.error("❌ Lỗi tạo captain:", error);
+      Alert.alert("Thất bại", "Không thể tạo thuyền trưởng, vui lòng thử lại!");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" />
-      {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Ionicons name="arrow-back" size={26} color="#003d66" />

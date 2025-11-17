@@ -56,7 +56,6 @@ const HomeScreen = ({ navigation }) => {
           </View>
 
           <View style={styles.featureSection}>
-            {/* ----------- Cột XƯỞNG ----------- */}
             <View style={styles.featureColumn}>
               <View style={styles.featureBox}>
                 <View style={styles.boxHeader}>
@@ -89,7 +88,6 @@ const HomeScreen = ({ navigation }) => {
               </View>
             </View>
 
-            {/* ----------- Cột NHÀ CUNG CẤP ----------- */}
             <View style={styles.featureColumn}>
               <View style={styles.featureBox}>
                 <View style={styles.boxHeader}>

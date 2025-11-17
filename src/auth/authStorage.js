@@ -1,6 +1,19 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const TOKEN_KEY = "accessToken"; 
+const ROLE_KEY = "userRole";
+
+export const saveRole = async (role) => {
+  await AsyncStorage.setItem(ROLE_KEY, role);
+};
+
+export const getRole = async () => {
+  return await AsyncStorage.getItem(ROLE_KEY);
+};
+
+export const clearRole = async () => {
+  await AsyncStorage.removeItem(ROLE_KEY);
+};
 
 export const saveToken = async (token) => {
   try {

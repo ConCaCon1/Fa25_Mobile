@@ -18,7 +18,6 @@ import { useIsFocused } from "@react-navigation/native";
 import { SwipeListView } from "react-native-swipe-list-view";
 
 const AccountScreen = ({ navigation }) => {
-  const [activeTab, setActiveTab] = useState("SHIPS");
   const [ships, setShips] = useState([]);
   const [loading, setLoading] = useState(false);
   const [page, setPage] = useState(1);
@@ -26,13 +25,11 @@ const AccountScreen = ({ navigation }) => {
   const isFocused = useIsFocused();
 
   useEffect(() => {
-    if (activeTab === "SHIPS" && isFocused) {
-      setShips([]);
-      setPage(1);
-      setHasMore(true);
-      fetchShips(1, true);
-    }
-  }, [activeTab, isFocused]);
+    setShips([]);
+    setPage(1);
+    setHasMore(true);
+    fetchShips(1, true);
+  }, [isFocused]);
 
   const fetchShips = async (pageNum = 1, reset = false) => {
     try {
@@ -43,8 +40,7 @@ const AccountScreen = ({ navigation }) => {
         : [];
 
       setShips((prev) => {
-        const safePrev = Array.isArray(prev) ? prev : [];
-        const merged = reset ? newShips : [...safePrev, ...newShips];
+        const merged = reset ? newShips : [...prev, ...newShips];
         const uniqueShips = merged.filter(
           (v, i, a) => a.findIndex((t) => t.id === v.id) === i
         );
@@ -96,12 +92,7 @@ const AccountScreen = ({ navigation }) => {
         style: "destructive",
         onPress: async () => {
           try {
-            console.log("🗑️ Gửi yêu cầu PATCH /ships/" + shipId);
-            const result = await apiPatch(`/ships/${shipId}`, {
-              deleted: true,
-            });
-
-            console.log("✅ Ship deleted:", result);
+            await apiPatch(`/ships/${shipId}`, { deleted: true });
             setShips((prev) => prev.filter((s) => s.id !== shipId));
             Alert.alert("✅ Thành công", "Đã xóa tàu thành công!");
           } catch (error) {
@@ -125,135 +116,73 @@ const AccountScreen = ({ navigation }) => {
     </View>
   );
 
- const ShipCard = ({ ship }) => (
-  <View style={styles.card}>
-    {/* Phần card thông tin bấm vào sẽ vào ShipDetailScreen */}
-    <TouchableOpacity
-      style={{ flex: 1 }}
-      onPress={() =>
-        navigation.navigate("ShipDetailScreen", {
-          shipId: ship.id,
-        })
-      }
-    >
-      <View style={styles.cardHeader}>
-        <Image
-          source={{
-            uri: "https://png.pngtree.com/png-vector/20250728/ourlarge/pngtree-vintage-trawler-fishing-boat-vector-icon-element-png-image_16880913.webp",
-          }}
-          style={styles.cardAvatar}
-        />
-        <View style={{ flex: 1 }}>
-          <Text style={styles.cardTitle}>{ship.name}</Text>
-          <Text style={styles.cardSubtitle}>
-            IMO: {ship.imoNumber || "N/A"}
-          </Text>
-        </View>
-
-        {/* Nút map riêng, bấm vào chuyển ShipMapScreen */}
-        <TouchableOpacity
-          onPress={() =>
-            navigation.navigate("ShipMapScreen", {
-              name: ship.name,
-              latitude: parseFloat(ship.latitude),
-              longitude: parseFloat(ship.longitude),
-            })
-          }
-        >
-          <Ionicons name="map-outline" size={20} color="#003d66" />
-        </TouchableOpacity>
-      </View>
-
-      <View style={styles.infoGroup}>
-        <View style={styles.infoRow}>
-          <MaterialIcons name="local-activity" size={16} color="#003d66" />
-          <Text style={styles.cardInfoText}>
-            Register No: {ship.registerNo}
-          </Text>
-        </View>
-        <View style={styles.infoRow}>
-          <MaterialIcons name="business" size={16} color="#003d66" />
-          <Text style={styles.cardInfoText}>Build Year: {ship.buildYear}</Text>
-        </View>
-        <View style={styles.infoRow}>
-          <Ionicons name="navigate-outline" size={16} color="#003d66" />
-          <Text style={styles.cardInfoText}>
-            Pos:{" "}
-            {ship.latitude && ship.longitude
-              ? `${parseFloat(ship.latitude).toFixed(3)}, ${parseFloat(
-                  ship.longitude
-                ).toFixed(3)}`
-              : "Unknown"}
-          </Text>
-        </View>
-      </View>
-    </TouchableOpacity>
-  </View>
-);
-
-  const renderShipList = () => (
-    <SwipeListView
-      data={ships || []}
-      keyExtractor={(item, index) => `${item.id || index}-${index}`}
-      renderItem={({ item }) => <ShipCard ship={item} />}
-      renderHiddenItem={renderHiddenItem}
-      rightOpenValue={-80}
-      disableRightSwipe={true}
-      onEndReached={loadMoreShips}
-      onEndReachedThreshold={0.3}
-      ListHeaderComponent={
-        <View style={styles.listHeaderContainer}>
-          <Text style={styles.listHeaderTitle}>My Ships</Text>
+  const ShipCard = ({ ship }) => (
+    <View style={styles.card}>
+      <TouchableOpacity
+        style={{ flex: 1 }}
+        onPress={() =>
+          navigation.navigate("ShipDetailScreen", {
+            shipId: ship.id,
+          })
+        }
+      >
+        <View style={styles.cardHeader}>
+          <Image
+            source={{
+              uri: "https://png.pngtree.com/png-vector/20250728/ourlarge/pngtree-vintage-trawler-fishing-boat-vector-icon-element-png-image_16880913.webp",
+            }}
+            style={styles.cardAvatar}
+          />
+          <View style={{ flex: 1 }}>
+            <Text style={styles.cardTitle}>{ship.name}</Text>
+            <Text style={styles.cardSubtitle}>
+              IMO: {ship.imoNumber || "N/A"}
+            </Text>
+          </View>
           <TouchableOpacity
-            style={styles.addButton}
-            onPress={() => navigation.navigate("AddShipScreen")}
+            onPress={() =>
+              navigation.navigate("ShipMapScreen", {
+                name: ship.name,
+                latitude: parseFloat(ship.latitude),
+                longitude: parseFloat(ship.longitude),
+              })
+            }
           >
-            <Ionicons name="add" size={18} color="#005691" />
-            <Text style={styles.addButtonText}>Add Ship</Text>
+            <Ionicons name="map-outline" size={20} color="#003d66" />
           </TouchableOpacity>
         </View>
-      }
-      ListEmptyComponent={
-        !loading && (
-          <Text style={{ textAlign: "center", marginTop: 30 }}>
-            No ships found 🚢
-          </Text>
-        )
-      }
-      ListFooterComponent={
-        loading && (
-          <ActivityIndicator
-            size="small"
-            color="#003d66"
-            style={{ marginVertical: 20 }}
-          />
-        )
-      }
-    />
-  );
-
-  const renderCaptainsList = () => (
-    <View style={{ flex: 1 }}>
-      <View style={styles.listHeaderContainer}>
-        <Text style={styles.listHeaderTitle}>My Captains</Text>
-        <TouchableOpacity
-          style={styles.addButton}
-          onPress={() => navigation.navigate("AddCaptainScreen")}
-        >
-          <Ionicons name="add" size={18} color="#005691" />
-          <Text style={styles.addButtonText}>Add Captain</Text>
-        </TouchableOpacity>
-      </View>
-      <View style={styles.centerBox}>
-        <Text>No captains found 👨‍✈️</Text>
-      </View>
+        <View style={styles.infoGroup}>
+          <View style={styles.infoRow}>
+            <MaterialIcons name="local-activity" size={16} color="#003d66" />
+            <Text style={styles.cardInfoText}>
+              Register No: {ship.registerNo}
+            </Text>
+          </View>
+          <View style={styles.infoRow}>
+            <MaterialIcons name="business" size={16} color="#003d66" />
+            <Text style={styles.cardInfoText}>
+              Build Year: {ship.buildYear}
+            </Text>
+          </View>
+          <View style={styles.infoRow}>
+            <Ionicons name="navigate-outline" size={16} color="#003d66" />
+            <Text style={styles.cardInfoText}>
+              Pos:{" "}
+              {ship.latitude && ship.longitude
+                ? `${parseFloat(ship.latitude).toFixed(3)}, ${parseFloat(
+                    ship.longitude
+                  ).toFixed(3)}`
+                : "Unknown"}
+            </Text>
+          </View>
+        </View>
+      </TouchableOpacity>
     </View>
   );
 
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" />
-
       <View style={styles.bannerContainer}>
         <Image
           source={{
@@ -283,30 +212,52 @@ const AccountScreen = ({ navigation }) => {
         </View>
       </View>
 
-      <View style={styles.tabRow}>
-        {["SHIPS", "CAPTAINS"].map((tab) => (
-          <TouchableOpacity
-            key={tab}
-            style={[
-              styles.tabButton,
-              activeTab === tab && styles.activeTabButton,
-            ]}
-            onPress={() => setActiveTab(tab)}
-          >
-            <Text
-              style={[
-                styles.tabText,
-                activeTab === tab && styles.activeTabText,
-              ]}
-            >
-              {tab}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </View>
-
       <View style={styles.listContainer}>
-        {activeTab === "SHIPS" ? renderShipList() : renderCaptainsList()}
+        <SwipeListView
+          data={ships || []}
+          keyExtractor={(item, index) => `${item.id || index}-${index}`}
+          renderItem={({ item }) => <ShipCard ship={item} />}
+          renderHiddenItem={renderHiddenItem}
+          rightOpenValue={-80}
+          disableRightSwipe={true}
+          onEndReached={loadMoreShips}
+          onEndReachedThreshold={0.3}
+          ListHeaderComponent={
+            <View style={styles.listHeaderContainer}>
+              <Text style={styles.listHeaderTitle}>My Ships</Text>
+              <TouchableOpacity
+                style={styles.addButton}
+                onPress={() => navigation.navigate("AddShipScreen")}
+              >
+                <Ionicons name="add" size={18} color="#005691" />
+                <Text style={styles.addButtonText}>Add Ship</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.addButton}
+                onPress={() => navigation.navigate("AddCaptainScreen")}
+              >
+                <Ionicons name="add" size={18} color="#005691" />
+                <Text style={styles.addButtonText}>Add Captain</Text>
+              </TouchableOpacity>
+            </View>
+          }
+          ListEmptyComponent={
+            !loading && (
+              <Text style={{ textAlign: "center", marginTop: 30 }}>
+                No ships found 🚢
+              </Text>
+            )
+          }
+          ListFooterComponent={
+            loading && (
+              <ActivityIndicator
+                size="small"
+                color="#003d66"
+                style={{ marginVertical: 20 }}
+              />
+            )
+          }
+        />
       </View>
 
       <BottomNavBar activeScreen="Account" navigation={navigation} />
@@ -354,15 +305,38 @@ const styles = StyleSheet.create({
   editButton: { flexDirection: "row", alignItems: "center", marginTop: 4 },
   editText: { color: "#003d66", marginLeft: 5 },
   interests: { color: "#718096", fontSize: 13, marginTop: 4 },
-  tabRow: { flexDirection: "row", justifyContent: "center", marginTop: 15, marginBottom: 8 },
-  tabButton: { paddingVertical: 8, paddingHorizontal: 25, borderRadius: 20, backgroundColor: "#E2E8F0", marginHorizontal: 5 },
+  tabRow: {
+    flexDirection: "row",
+    justifyContent: "center",
+    marginTop: 15,
+    marginBottom: 8,
+  },
+  tabButton: {
+    paddingVertical: 8,
+    paddingHorizontal: 25,
+    borderRadius: 20,
+    backgroundColor: "#E2E8F0",
+    marginHorizontal: 5,
+  },
   activeTabButton: { backgroundColor: "#003d66" },
   tabText: { color: "#1A202C", fontWeight: "bold" },
   activeTabText: { color: "#FFFFFF" },
   listContainer: { flex: 1, paddingHorizontal: 15 },
-  listHeaderContainer: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginVertical: 10 },
+  listHeaderContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginVertical: 10,
+  },
   listHeaderTitle: { fontSize: 18, fontWeight: "bold", color: "#1C2A3A" },
-  addButton: { flexDirection: "row", alignItems: "center", backgroundColor: "#E6F0FA", paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8 },
+  addButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#E6F0FA",
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
+  },
   addButtonText: { color: "#005691", marginLeft: 5, fontWeight: "600" },
   card: {
     backgroundColor: "#FFFFFF",
@@ -382,8 +356,24 @@ const styles = StyleSheet.create({
   infoGroup: { marginTop: 8 },
   infoRow: { flexDirection: "row", alignItems: "center", marginTop: 5 },
   cardInfoText: { marginLeft: 6, color: "#2D3748", fontSize: 13 },
-  rowBack: { alignItems: "center", backgroundColor: "#F7FAFC", flex: 1, flexDirection: "row", justifyContent: "flex-end", marginBottom: 15, borderRadius: 12 },
-  deleteButton: { backgroundColor: "#FF3B30", justifyContent: "center", alignItems: "center", width: 80, height: "100%", borderTopRightRadius: 12, borderBottomRightRadius: 12 },
+  rowBack: {
+    alignItems: "center",
+    backgroundColor: "#F7FAFC",
+    flex: 1,
+    flexDirection: "row",
+    justifyContent: "flex-end",
+    marginBottom: 15,
+    borderRadius: 12,
+  },
+  deleteButton: {
+    backgroundColor: "#FF3B30",
+    justifyContent: "center",
+    alignItems: "center",
+    width: 80,
+    height: "100%",
+    borderTopRightRadius: 12,
+    borderBottomRightRadius: 12,
+  },
   deleteText: { color: "#fff", fontSize: 13, fontWeight: "600", marginTop: 2 },
   centerBox: { flex: 1, justifyContent: "center", alignItems: "center" },
 });

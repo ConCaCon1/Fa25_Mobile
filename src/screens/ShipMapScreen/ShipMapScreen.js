@@ -3,6 +3,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import GoongMapView from "../../components/GoongMapView";
 import { SafeAreaView } from "react-native-safe-area-context";
+
 const ShipMapScreen = ({ route }) => {
   const { name, latitude, longitude } = route.params;
   const navigation = useNavigation();
