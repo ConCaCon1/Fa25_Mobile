@@ -1,22 +1,36 @@
 import React, { useRef, useState } from 'react';
-import { View, Alert, TextInput, Button } from 'react-native';
+import {
+  View,
+  Alert,
+  TextInput,
+  Text,
+  ActivityIndicator,
+  StyleSheet,
+  Image,
+  TouchableOpacity,
+  Platform,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { WebView } from 'react-native-webview';
 import * as Location from 'expo-location';
-import { VITE_GOONG_MAP_KEY, VITE_GOONG_API_KEY } from '@env';
+
+import {
+  VITE_GOONG_MAP_KEY,
+  VITE_GOONG_API_KEY,
+  WEATHER_API_KEY,
+} from '@env';
+
 import BottomNavBar from '../../components/BottomNavBar';
 
 const MapScreen = ({ navigation }) => {
   const webviewRef = useRef(null);
   const [query, setQuery] = useState('');
+  const [weatherData, setWeatherData] = useState(null);
+  const [weatherLoading, setWeatherLoading] = useState(true);
 
-  // ------------------------------------------------------------
-  // 📌 HÀM GỬI DANH SÁCH ĐỊA ĐIỂM (TẠO NHIỀU MARKER)
-  // ------------------------------------------------------------
   const showLocations = (locations) => {
     const js = `
       (function(){
-        // Xóa marker cũ
         if (window.multiMarkers) {
           window.multiMarkers.forEach(m => m.remove());
         }
@@ -29,20 +43,54 @@ const MapScreen = ({ navigation }) => {
             .setLngLat([item.lng, item.lat])
             .setPopup(new maplibregl.Popup().setText(item.name))
             .addTo(map);
-
           window.multiMarkers.push(marker);
         });
       })();
     `;
-
-    webviewRef.current.injectJavaScript(js);
+    webviewRef.current?.injectJavaScript(js);
   };
 
   const testLocations = [
-    { id: 1, name: "Bến Nhà Rồng", lat: 10.6, lng: 10.4 },
+    { id: 1, name: "Bến Nhà Rồng", lat: 10.7680, lng: 106.7050 },
     { id: 2, name: "Landmark 81", lat: 10.7946, lng: 106.7223 },
     { id: 3, name: "Chợ Bến Thành", lat: 10.7723, lng: 106.6983 },
   ];
+
+  const fetchWeather = async (lat, lng) => {
+    try {
+      setWeatherLoading(true);
+
+      const simpleUrl = `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lng}&units=metric&lang=vi&appid=${WEATHER_API_KEY}`;
+      const res = await fetch(simpleUrl);
+
+      if (!res.ok) {
+        const err = await res.text();
+        console.warn('API lỗi:', res.status, err);
+        throw new Error('HTTP ' + res.status);
+      }
+
+      const data = await res.json();
+
+      setWeatherData({
+        current: {
+          temp: data.main.temp,
+          feels_like: data.main.feels_like,
+          weather: [{
+            description: data.weather[0].description,
+            icon: data.weather[0].icon,
+          }],
+        },
+        alerts: [],
+      });
+
+    } catch (err) {
+      console.warn('Hoàn toàn không lấy được thời tiết:', err);
+      Alert.alert('Thông báo', 'Không thể tải thời tiết. Vui lòng kiểm tra kết nối mạng.');
+    } finally {
+      setWeatherLoading(false);
+    }
+  };
+
 
   const handleMapLoaded = async () => {
     showLocations(testLocations);
@@ -50,6 +98,7 @@ const MapScreen = ({ navigation }) => {
     let { status } = await Location.requestForegroundPermissionsAsync();
     if (status !== 'granted') {
       Alert.alert('Permission denied', 'Không thể truy cập vị trí của bạn.');
+      setWeatherLoading(false);
       return;
     }
 
@@ -58,19 +107,21 @@ const MapScreen = ({ navigation }) => {
     });
     const { latitude, longitude } = location.coords;
 
+    fetchWeather(latitude, longitude);
+
     const js = `
       if (typeof map !== 'undefined') {
         const userLoc = { lat: ${latitude}, lng: ${longitude} };
+        if (window.userMarker) window.userMarker.remove();
         window.userMarker = new maplibregl.Marker({ color: 'red' })
           .setLngLat([userLoc.lng, userLoc.lat])
           .addTo(map);
-        map.flyTo({ center: [userLoc.lng, userLoc.lat], zoom: 14 });
+        map.flyTo({ center: [userLoc.lng, userLoc.lat], zoom: 15 });
         window.userLocation = userLoc;
       }
     `;
-    webviewRef.current.injectJavaScript(js);
+    webviewRef.current?.injectJavaScript(js);
   };
-
 
   const handleSearch = () => {
     if (!query) return;
@@ -170,28 +221,34 @@ const MapScreen = ({ navigation }) => {
         } catch(e){ console.error(e); }
       })();
     `;
-    webviewRef.current.injectJavaScript(js);
+    webviewRef.current?.injectJavaScript(js);
   };
-
 
   const handleMessage = (event) => {
     try {
       const data = JSON.parse(event.nativeEvent.data);
       if (data.distance) {
-        Alert.alert('Thông tin vị trí', `📍 ${data.address}\n\nKhoảng cách: ${data.distance}\nThời gian: ${data.duration}`);
+        Alert.alert(
+          'Thông tin vị trí',
+          `📍 ${data.address}\n\nKhoảng cách: ${data.distance}\nThời gian: ${data.duration}`
+        );
       } else if (data.lat && data.lng) {
-        Alert.alert('Vị trí', `Kinh độ: ${data.lng}\nVĩ độ: ${data.lat}\n${data.address || ''}`);
+        Alert.alert(
+          'Vị trí',
+          `Kinh độ: ${data.lng}\nVĩ độ: ${data.lat}\n${data.address || ''}`
+        );
       }
-    } catch {}
+    } catch (e) {
+      console.warn('Message parse error:', e);
+    }
   };
-
 
   const html = `
     <!DOCTYPE html>
     <html>
       <head>
         <meta charset="utf-8" />
-        <meta name="viewport" content="width=device-width">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <style>
           body, html { margin: 0; padding: 0; height: 100%; width: 100%; }
           #map { position: absolute; top:0; bottom:0; width:100%; }
@@ -199,10 +256,8 @@ const MapScreen = ({ navigation }) => {
         <script src="https://unpkg.com/maplibre-gl/dist/maplibre-gl.js"></script>
         <link href="https://unpkg.com/maplibre-gl/dist/maplibre-gl.css" rel="stylesheet"/>
       </head>
-
       <body>
         <div id="map"></div>
-
         <script>
           const map = new maplibregl.Map({
             container: 'map',
@@ -210,20 +265,15 @@ const MapScreen = ({ navigation }) => {
             center: [106.660172, 10.762622],
             zoom: 12
           });
-
           map.addControl(new maplibregl.NavigationControl());
 
-          // CLICK TRÊN MAP
           map.on('click', async (e) => {
             const lng = e.lngLat.lng;
             const lat = e.lngLat.lat;
-
             if(window.searchMarker) window.searchMarker.remove();
-
             window.searchMarker = new maplibregl.Marker({ color: 'blue' })
               .setLngLat([lng, lat])
               .addTo(map);
-
             try {
               const res = await fetch("https://rsapi.goong.io/Geocode?latlng=" + lat + "," + lng + "&api_key=${VITE_GOONG_API_KEY}");
               const data = await res.json();
@@ -238,25 +288,11 @@ const MapScreen = ({ navigation }) => {
     </html>
   `;
 
-  return (
-    <SafeAreaView style={{ flex: 1 }}>
-      <View style={{ flexDirection: 'row', padding: 8, backgroundColor: '#fff', zIndex: 10 }}>
-        <TextInput
-          style={{
-            flex: 1,
-            borderWidth: 1,
-            borderColor: '#ccc',
-            paddingHorizontal: 8,
-            height: 40,
-            borderRadius: 4,
-          }}
-          placeholder="Nhập địa chỉ hoặc địa điểm"
-          value={query}
-          onChangeText={setQuery}
-        />
-        <Button title="Tìm" onPress={handleSearch} />
-      </View>
+  const iconCode = weatherData?.current?.weather?.[0]?.icon;
+  const iconUrl = iconCode ? `https://openweathermap.org/img/wn/${iconCode}@2x.png` : null;
 
+  return (
+    <SafeAreaView style={{ flex: 1, backgroundColor: '#fff' }}>
       <WebView
         ref={webviewRef}
         originWhitelist={['*']}
@@ -266,12 +302,149 @@ const MapScreen = ({ navigation }) => {
         onMessage={handleMessage}
         javaScriptEnabled
         domStorageEnabled
-        style={{ flex: 1 }}
+        style={StyleSheet.absoluteFillObject}
       />
+      <View style={styles.overlayContainer}>
+        <View style={styles.searchBarContainer}>
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Nhập địa chỉ hoặc địa điểm..."
+            placeholderTextColor="#888"
+            value={query}
+            onChangeText={setQuery}
+            onSubmitEditing={handleSearch}
+          />
+          <TouchableOpacity style={styles.searchButton} onPress={handleSearch}>
+            <Text style={styles.searchButtonText}>Tìm</Text>
+          </TouchableOpacity>
+        </View>
+
+        {weatherLoading ? (
+          <View style={styles.loadingCard}>
+            <ActivityIndicator size="small" color="#4A90E2" />
+            <Text style={{ marginLeft: 8, color: '#4A90E2' }}>Đang tải...</Text>
+          </View>
+        ) : weatherData?.current ? (
+          <View style={styles.weatherCard}>
+            {iconUrl && <Image source={{ uri: iconUrl }} style={styles.weatherIcon} />}
+            <View style={{ marginLeft: 6 }}>
+              <Text style={styles.weatherTempText}>
+                {Math.round(weatherData.current.temp)}°C
+              </Text>
+              <Text style={styles.weatherDescText}>
+                {weatherData.current.weather[0].description.charAt(0).toUpperCase() +
+                  weatherData.current.weather[0].description.slice(1)}
+              </Text>
+              {weatherData.alerts?.length > 0 && <Text style={styles.weatherAlertText}>⚠️ Cảnh báo</Text>}
+            </View>
+          </View>
+        ) : null}
+      </View>
 
       <BottomNavBar activeScreen="Map" navigation={navigation} />
     </SafeAreaView>
   );
 };
+
+const styles = StyleSheet.create({
+  overlayContainer: {
+    position: 'absolute',
+    top: 30,
+    left: 0,
+    right: 0,
+    paddingHorizontal: 16,
+    paddingTop: 10,
+    zIndex: 10,
+  },
+
+  searchBarContainer: {
+    flexDirection: 'row',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.1,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 8,
+      },
+    }),
+    overflow: 'hidden',
+    marginBottom: 10,
+  },
+  searchInput: {
+    flex: 1,
+    paddingHorizontal: 16,
+    height: 50,
+    fontSize: 16,
+    color: '#333',
+  },
+  searchButton: {
+    backgroundColor: '#007AFF',
+    paddingHorizontal: 15,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  searchButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+
+  loadingCard: {
+    flexDirection: 'row',
+    backgroundColor: '#F0F4FF',
+    padding: 10,
+    borderRadius: 8,
+    alignSelf: 'flex-start',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 8,
+  },
+  weatherCard: {
+    flexDirection: 'row',
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    padding: 10,
+    borderRadius: 12,
+    alignSelf: 'flex-end',
+    alignItems: 'center',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.15,
+        shadowRadius: 6,
+      },
+      android: {
+        elevation: 6,
+      },
+    }),
+    marginTop: 8,
+  },
+  weatherIcon: {
+    width: 48,
+    height: 48,
+  },
+  weatherTempText: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: '#1A237E',
+    lineHeight: 28,
+  },
+  weatherDescText: {
+    fontSize: 14,
+    color: '#4A90E2',
+    marginTop: 2,
+  },
+  weatherAlertText: {
+    fontSize: 12,
+    color: '#D32F2F',
+    fontWeight: 'bold',
+    marginTop: 2,
+  },
+});
 
 export default MapScreen;
