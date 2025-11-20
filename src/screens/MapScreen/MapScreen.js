@@ -10,10 +10,10 @@ import {
   TouchableOpacity,
   Platform,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { WebView } from 'react-native-webview';
 import * as Location from 'expo-location';
-
+import { Ionicons } from '@expo/vector-icons'; 
+import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   VITE_GOONG_MAP_KEY,
   VITE_GOONG_API_KEY,
@@ -27,6 +27,7 @@ const MapScreen = ({ navigation }) => {
   const [query, setQuery] = useState('');
   const [weatherData, setWeatherData] = useState(null);
   const [weatherLoading, setWeatherLoading] = useState(true);
+
 
   const showLocations = (locations) => {
     const js = `
@@ -203,7 +204,7 @@ const MapScreen = ({ navigation }) => {
                       id: 'routeLine',
                       type: 'line',
                       source: 'routeLine',
-                      paint: { 'line-color': '#007AFF', 'line-width': 5 }
+                      paint: { 'line-color': '#4CAF50', 'line-width': 5, 'line-dasharray': [2, 1] } 
                     });
                   }
 
@@ -229,20 +230,22 @@ const MapScreen = ({ navigation }) => {
       const data = JSON.parse(event.nativeEvent.data);
       if (data.distance) {
         Alert.alert(
-          'Thông tin vị trí',
-          `📍 ${data.address}\n\nKhoảng cách: ${data.distance}\nThời gian: ${data.duration}`
+          'Thông tin Tuyến đường',
+          `📍 ${data.address}\n\nKhoảng cách: ${data.distance}\nThời gian: ${data.duration}`,
+          [{ text: 'Đóng' }]
         );
       } else if (data.lat && data.lng) {
         Alert.alert(
-          'Vị trí',
-          `Kinh độ: ${data.lng}\nVĩ độ: ${data.lat}\n${data.address || ''}`
+          'Thông tin Vị trí Đã Nhấn',
+          `Vị trí: ${data.lat}, ${data.lng}\nĐịa chỉ: ${data.address || 'Không tìm thấy địa chỉ'}`,
+          [{ text: 'Đóng' }]
         );
       }
     } catch (e) {
       console.warn('Message parse error:', e);
     }
   };
-
+  
   const html = `
     <!DOCTYPE html>
     <html>
@@ -251,7 +254,11 @@ const MapScreen = ({ navigation }) => {
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <style>
           body, html { margin: 0; padding: 0; height: 100%; width: 100%; }
-          #map { position: absolute; top:0; bottom:0; width:100%; }
+          #map { position: absolute; top:0; bottom:10px; width:100%; }
+          .maplibregl-ctrl-bottom-right {
+            bottom: 100px; 
+            right: 16px; 
+          }
         </style>
         <script src="https://unpkg.com/maplibre-gl/dist/maplibre-gl.js"></script>
         <link href="https://unpkg.com/maplibre-gl/dist/maplibre-gl.css" rel="stylesheet"/>
@@ -265,15 +272,21 @@ const MapScreen = ({ navigation }) => {
             center: [106.660172, 10.762622],
             zoom: 12
           });
-          map.addControl(new maplibregl.NavigationControl());
+          
+          map.addControl(new maplibregl.NavigationControl(), 'bottom-right'); 
 
           map.on('click', async (e) => {
             const lng = e.lngLat.lng;
             const lat = e.lngLat.lat;
+            
+            if(map.getLayer('routeLine')) map.removeLayer('routeLine');
+            if(map.getSource('routeLine')) map.removeSource('routeLine');
+
             if(window.searchMarker) window.searchMarker.remove();
-            window.searchMarker = new maplibregl.Marker({ color: 'blue' })
+            window.searchMarker = new maplibregl.Marker({ color: '#FF3B30' }) 
               .setLngLat([lng, lat])
               .addTo(map);
+
             try {
               const res = await fetch("https://rsapi.goong.io/Geocode?latlng=" + lat + "," + lng + "&api_key=${VITE_GOONG_API_KEY}");
               const data = await res.json();
@@ -292,7 +305,7 @@ const MapScreen = ({ navigation }) => {
   const iconUrl = iconCode ? `https://openweathermap.org/img/wn/${iconCode}@2x.png` : null;
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: '#fff' }}>
+    <SafeAreaView style={styles.safeArea}>
       <WebView
         ref={webviewRef}
         originWhitelist={['*']}
@@ -304,41 +317,58 @@ const MapScreen = ({ navigation }) => {
         domStorageEnabled
         style={StyleSheet.absoluteFillObject}
       />
-      <View style={styles.overlayContainer}>
-        <View style={styles.searchBarContainer}>
-          <TextInput
-            style={styles.searchInput}
-            placeholder="Nhập địa chỉ hoặc địa điểm..."
-            placeholderTextColor="#888"
-            value={query}
-            onChangeText={setQuery}
-            onSubmitEditing={handleSearch}
-          />
-          <TouchableOpacity style={styles.searchButton} onPress={handleSearch}>
-            <Text style={styles.searchButtonText}>Tìm</Text>
-          </TouchableOpacity>
+
+      <View style={styles.overlayContainer} pointerEvents="box-none">
+        
+        <View style={styles.searchBarPlacement}>
+            <View style={styles.searchBarContainer}>
+                <Ionicons name="search" size={20} color="#6B7280" style={{ marginLeft: 16 }} />
+                <TextInput
+                    style={styles.searchInput}
+                    placeholder="Tìm kiếm địa chỉ, địa điểm..."
+                    placeholderTextColor="#9CA3AF"
+                    value={query}
+                    onChangeText={setQuery}
+                    onSubmitEditing={handleSearch}
+                />
+                <TouchableOpacity 
+                    style={styles.searchButton} 
+                    onPress={handleSearch}
+                    activeOpacity={0.8}
+                >
+                    <Ionicons name="arrow-forward-outline" size={24} color="#FFFFFF" />
+                </TouchableOpacity>
+            </View>
         </View>
 
-        {weatherLoading ? (
-          <View style={styles.loadingCard}>
-            <ActivityIndicator size="small" color="#4A90E2" />
-            <Text style={{ marginLeft: 8, color: '#4A90E2' }}>Đang tải...</Text>
-          </View>
-        ) : weatherData?.current ? (
-          <View style={styles.weatherCard}>
-            {iconUrl && <Image source={{ uri: iconUrl }} style={styles.weatherIcon} />}
-            <View style={{ marginLeft: 6 }}>
-              <Text style={styles.weatherTempText}>
-                {Math.round(weatherData.current.temp)}°C
-              </Text>
-              <Text style={styles.weatherDescText}>
-                {weatherData.current.weather[0].description.charAt(0).toUpperCase() +
-                  weatherData.current.weather[0].description.slice(1)}
-              </Text>
-              {weatherData.alerts?.length > 0 && <Text style={styles.weatherAlertText}>⚠️ Cảnh báo</Text>}
+
+        <View style={styles.weatherPlacement} pointerEvents="box-none">
+          {weatherLoading ? (
+            <View style={styles.loadingCard}>
+              <ActivityIndicator size="small" color="#1F2937" />
+              <Text style={styles.loadingText}>Đang tải thời tiết...</Text>
             </View>
-          </View>
-        ) : null}
+          ) : weatherData?.current ? (
+            <View style={styles.weatherCard}>
+              {iconUrl && <Image source={{ uri: iconUrl }} style={styles.weatherIcon} />}
+              <View style={styles.weatherInfo}>
+                <Text style={styles.weatherTempText}>
+                  {Math.round(weatherData.current.temp)}°C
+                </Text>
+                <Text style={styles.weatherDescText}>
+                  {weatherData.current.weather[0].description.charAt(0).toUpperCase() +
+                    weatherData.current.weather[0].description.slice(1)}
+                </Text>
+              </View>
+              {weatherData.alerts?.length > 0 && (
+                <View style={styles.alertContainer}>
+                  <Ionicons name="warning" size={16} color="#F59E0B" />
+                  <Text style={styles.weatherAlertText}>Cảnh báo</Text>
+                </View>
+              )}
+            </View>
+          ) : null}
+        </View>
       </View>
 
       <BottomNavBar activeScreen="Map" navigation={navigation} />
@@ -346,104 +376,144 @@ const MapScreen = ({ navigation }) => {
   );
 };
 
+
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: '#f0f0f0',
+  },
+
   overlayContainer: {
     position: 'absolute',
-    top: 30,
+    top: 40,
     left: 0,
     right: 0,
+    bottom: 0, 
     paddingHorizontal: 16,
-    paddingTop: 10,
     zIndex: 10,
+  },
+  
+  searchBarPlacement: {
+    paddingTop: Platform.OS === 'ios' ? 10 : 16, 
   },
 
   searchBarContainer: {
     flexDirection: 'row',
+    alignItems: 'center',
     backgroundColor: '#FFFFFF',
-    borderRadius: 12,
+    borderRadius: 14, 
+    height: 56, 
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 6 },
+        shadowOpacity: 0.1,
+        shadowRadius: 12,
+      },
+      android: {
+        elevation: 10,
+      },
+    }),
+    overflow: 'hidden',
+  },
+  searchInput: {
+    flex: 1,
+    paddingHorizontal: 12,
+    height: '100%',
+    fontSize: 16,
+    color: '#1F2937', 
+  },
+  searchButton: {
+    backgroundColor: '#3B82F6', 
+    paddingHorizontal: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+    height: '100%',
+  },
+  searchButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  
+  weatherPlacement: {
+    alignItems: 'flex-end', 
+    marginTop: 12,
+  },
+
+  loadingCard: {
+    flexDirection: 'row',
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 10,
+    alignSelf: 'flex-start',
+    alignItems: 'center',
+    justifyContent: 'center',
+    ...Platform.select({
+      ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4, },
+      android: { elevation: 4, },
+    }),
+  },
+  loadingText: { 
+    marginLeft: 8, 
+    color: '#1F2937', 
+    fontSize: 14, 
+    fontWeight: '500' 
+  },
+
+  weatherCard: {
+    flexDirection: 'row',
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    padding: 12,
+    borderRadius: 16, 
+    alignSelf: 'flex-start',
+    alignItems: 'center',
     ...Platform.select({
       ios: {
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.1,
+        shadowOpacity: 0.15,
         shadowRadius: 8,
       },
       android: {
         elevation: 8,
       },
     }),
-    overflow: 'hidden',
-    marginBottom: 10,
-  },
-  searchInput: {
-    flex: 1,
-    paddingHorizontal: 16,
-    height: 50,
-    fontSize: 16,
-    color: '#333',
-  },
-  searchButton: {
-    backgroundColor: '#007AFF',
-    paddingHorizontal: 15,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  searchButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-
-  loadingCard: {
-    flexDirection: 'row',
-    backgroundColor: '#F0F4FF',
-    padding: 10,
-    borderRadius: 8,
-    alignSelf: 'flex-start',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 8,
-  },
-  weatherCard: {
-    flexDirection: 'row',
-    backgroundColor: 'rgba(255, 255, 255, 0.95)',
-    padding: 10,
-    borderRadius: 12,
-    alignSelf: 'flex-end',
-    alignItems: 'center',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.15,
-        shadowRadius: 6,
-      },
-      android: {
-        elevation: 6,
-      },
-    }),
-    marginTop: 8,
   },
   weatherIcon: {
-    width: 48,
-    height: 48,
+    width: 40, 
+    height: 40,
+  },
+  weatherInfo: {
+    marginLeft: 8,
   },
   weatherTempText: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: '#1A237E',
-    lineHeight: 28,
+    fontSize: 22, 
+    fontWeight: '800', 
+    color: '#1F2937', 
+    lineHeight: 24,
   },
   weatherDescText: {
-    fontSize: 14,
-    color: '#4A90E2',
+    fontSize: 13,
+    color: '#4B5563',
     marginTop: 2,
+    fontWeight: '400',
+  },
+  alertContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginLeft: 10,
+    backgroundColor: '#FEF3C7', 
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+    borderRadius: 8,
   },
   weatherAlertText: {
     fontSize: 12,
-    color: '#D32F2F',
+    color: '#B45309', 
     fontWeight: 'bold',
-    marginTop: 2,
+    marginLeft: 4,
   },
 });
 
