@@ -17,18 +17,33 @@ import { apiGet, apiPatch } from "../../ultis/api";
 import { useIsFocused } from "@react-navigation/native";
 import { SwipeListView } from "react-native-swipe-list-view";
 
+import { getUsername, clearAllData } from "../../auth/authStorage"; 
+
 const AccountScreen = ({ navigation }) => {
   const [ships, setShips] = useState([]);
   const [loading, setLoading] = useState(false);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
+  const [userName, setUserName] = useState("User"); 
+  const [isDataLoading, setIsDataLoading] = useState(true); 
   const isFocused = useIsFocused();
 
   useEffect(() => {
-    setShips([]);
-    setPage(1);
-    setHasMore(true);
-    fetchShips(1, true);
+    const loadProfileData = async () => {
+      const storedUsername = await getUsername(); 
+      if (storedUsername) {
+        const displayUsername = storedUsername.charAt(0).toUpperCase() + storedUsername.slice(1);
+        setUserName(displayUsername);
+      }
+      setIsDataLoading(false);
+
+      setShips([]);
+      setPage(1);
+      setHasMore(true);
+      fetchShips(1, true);
+    };
+
+    loadProfileData();
   }, [isFocused]);
 
   const fetchShips = async (pageNum = 1, reset = false) => {
@@ -71,7 +86,7 @@ const AccountScreen = ({ navigation }) => {
         style: "destructive",
         onPress: async () => {
           try {
-            await AsyncStorage.removeItem("userToken");
+            await clearAllData(); 
             navigation.reset({
               index: 0,
               routes: [{ name: "LoginScreen" }],
@@ -180,6 +195,15 @@ const AccountScreen = ({ navigation }) => {
     </View>
   );
 
+  if (isDataLoading) {
+    return (
+      <View style={styles.centerBox}>
+        <ActivityIndicator size="large" color="#003d66" />
+        <Text style={{ marginTop: 10 }}>Loading profile...</Text>
+      </View>
+    );
+  }
+
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" />
@@ -201,7 +225,7 @@ const AccountScreen = ({ navigation }) => {
           style={styles.avatar}
         />
         <View style={styles.profileInfoContainer}>
-          <Text style={styles.name}>Samantha</Text>
+          <Text style={styles.name}>{userName}</Text> 
           <TouchableOpacity style={styles.editButton}>
             <MaterialIcons name="edit" size={16} color="#003d66" />
             <Text style={styles.editText}>Edit Profile</Text>

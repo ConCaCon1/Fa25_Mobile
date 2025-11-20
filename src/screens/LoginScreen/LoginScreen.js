@@ -16,7 +16,8 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
 
 import { API_BASE_URL } from "@env";
-import { saveToken, saveRole } from "../../auth/authStorage";
+// Đảm bảo bạn đã import các hàm saveUsername và saveEmail mới
+import { saveToken, saveRole, saveUsername, saveEmail } from "../../auth/authStorage";
 
 const LoginScreen = ({ navigation }) => {
   const [usernameOrEmail, setUsernameOrEmail] = useState("");
@@ -44,15 +45,28 @@ const LoginScreen = ({ navigation }) => {
       const data = await response.json();
 
       if (response.ok && data.data?.accessToken) {
-        await saveToken(data.data.accessToken);
-        if (data.data?.role) {
-          await saveRole(data.data.role);
+        const userData = data.data;
+
+        // --- CẬP NHẬT LOGIC LƯU TRỮ DỮ LIỆU ---
+        await saveToken(userData.accessToken);
+        
+        if (userData.username) {
+            await saveUsername(userData.username); // <-- LƯU USERNAME
         }
+        if (userData.email) {
+            await saveEmail(userData.email);       // <-- LƯU EMAIL
+        }
+        
+        if (userData.role) {
+          await saveRole(userData.role);
+        }
+        // ------------------------------------
+
         Alert.alert("Success", "Login successful!", [
           {
             text: "OK",
             onPress: () => {
-              if (data.data.role === "Captain") {
+              if (userData.role === "Captain") {
                 navigation.replace("CaptainAccount");
               } else {
                 navigation.replace("Home");

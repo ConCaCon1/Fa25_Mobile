@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -8,11 +8,14 @@ import {
   Image,
   ScrollView,
   StatusBar,
+  ActivityIndicator,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import BottomNavBar from "../../components/BottomNavBar";
 import Header from "../../components/Header";
+
+import { getUsername } from "../../auth/authStorage"; 
 
 const factories = [
   { id: 1, name: "Xưởng", image: require("../../assets/boatyard.png") },
@@ -23,16 +26,42 @@ const suppliers = [
 ];
 
 const HomeScreen = ({ navigation }) => {
-  const [trackingId] = React.useState("");
+  const [trackingId] = useState("");
+  const [userName, setUserName] = useState("Guest"); 
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const loadUsername = async () => {
+      const storedUsername = await getUsername(); 
+      if (storedUsername) {
+        const displayUsername = storedUsername.charAt(0).toUpperCase() + storedUsername.slice(1);
+        setUserName(displayUsername);
+      } else {
+        setUserName("User");
+      }
+      setIsLoading(false);
+    };
+
+    loadUsername();
+  }, []);
+
+  if (isLoading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#003d66" />
+        <Text style={{ marginTop: 10 }}>Loading...</Text>
+      </View>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" />
-      <Header title="MaritimeHub" user="S" navigation={navigation} />
+      <Header title="MaritimeHub" user={userName[0] || 'S'} navigation={navigation} /> 
 
       <ScrollView showsVerticalScrollIndicator={false}>
         <View style={styles.content}>
-          <Text style={styles.welcomeText}>Welcome back, Samantha</Text>
+          <Text style={styles.welcomeText}>Welcome back, {userName}</Text> 
 
           <View style={styles.trackingCard}>
             <Text style={styles.cardTitle}>Marine Tracking</Text>
@@ -145,6 +174,12 @@ const HomeScreen = ({ navigation }) => {
 export default HomeScreen;
 
 const styles = StyleSheet.create({
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: "#F7FAFC",
+  },
   container: {
     flex: 1,
     backgroundColor: "#F7FAFC",
