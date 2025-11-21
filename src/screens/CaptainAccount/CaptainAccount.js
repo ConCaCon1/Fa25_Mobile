@@ -8,8 +8,8 @@ import {
   Platform,
   ActivityIndicator,
 } from 'react-native';
-import React, { useEffect, useState } from 'react';
-import { getRole, getUserData } from '../../auth/authStorage';
+import  { useEffect, useState } from 'react';
+import { getUserData } from '../../auth/authStorage';
 import { Ionicons, Feather } from '@expo/vector-icons'; 
 import { SafeAreaView } from 'react-native-safe-area-context';
 

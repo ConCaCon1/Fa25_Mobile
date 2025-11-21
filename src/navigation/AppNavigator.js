@@ -19,6 +19,8 @@ import AddCaptainScreen from "../screens/AddCaptainScreen/AddCaptainScreen";
 import ShipDetailScreen from "../screens/ShipDetailScreen/ShipDetailScreen";
 import CaptainAccount from "../screens/CaptainAccount/CaptainAccount";
 import ProtectedCaptainRoute from "./ProtectedCaptainRoute";
+import ProductListScreen from "../screens/ProductListScreen/ProductListScreen";
+import ProductDetailScreen from "../screens/ProductDetailScreen/ProductDetailScreen";
 
 const Stack = createNativeStackNavigator();
 
@@ -48,6 +50,8 @@ export default function AppNavigator() {
         <Stack.Screen name="SupplierDetail" component={SupplierDetailScreen} />
         <Stack.Screen name ="AddCaptainScreen" component={AddCaptainScreen} />
         <Stack.Screen name="ShipDetailScreen" component={ShipDetailScreen} />
+        <Stack.Screen name="ProductListScreen" component={ProductListScreen} />
+        <Stack.Screen name="ProductDetailScreen" component={ProductDetailScreen} />
         <Stack.Screen
           name="CaptainAccount"
           children={(props) => (
@@ -56,15 +60,7 @@ export default function AppNavigator() {
             </ProtectedCaptainRoute>
           )}
         />
-         {/* <Stack.Screen
-          name="History"
-          children={(props) => (
-            <ProtectedCaptainRoute navigation={props.navigation}>
-              < HistoryScreen {...props} />
-            </ProtectedCaptainRoute>
-          )}
-        />
-         */}
+   
       </Stack.Navigator>
     </NavigationContainer>
   );

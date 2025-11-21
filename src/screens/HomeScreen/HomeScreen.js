@@ -15,7 +15,7 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import BottomNavBar from "../../components/BottomNavBar";
 import Header from "../../components/Header";
 
-import { getUsername } from "../../auth/authStorage"; 
+import { getUsername } from "../../auth/authStorage";
 
 const factories = [
   { id: 1, name: "Xưởng", image: require("../../assets/boatyard.png") },
@@ -25,14 +25,15 @@ const suppliers = [
   { id: 1, name: "Nhà Cung Cấp", image: require("../../assets/supplier.jpg") },
 ];
 
+
 const HomeScreen = ({ navigation }) => {
   const [trackingId] = useState("");
-  const [userName, setUserName] = useState("Guest"); 
+  const [userName, setUserName] = useState("Guest");
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const loadUsername = async () => {
-      const storedUsername = await getUsername(); 
+      const storedUsername = await getUsername();
       if (storedUsername) {
         const displayUsername = storedUsername.charAt(0).toUpperCase() + storedUsername.slice(1);
         setUserName(displayUsername);
@@ -44,6 +45,10 @@ const HomeScreen = ({ navigation }) => {
 
     loadUsername();
   }, []);
+
+  const handleProductSearchPress = () => {
+    navigation.navigate("ProductListScreen"); 
+  };
 
   if (isLoading) {
     return (
@@ -57,11 +62,11 @@ const HomeScreen = ({ navigation }) => {
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" />
-      <Header title="MaritimeHub" user={userName[0] || 'S'} navigation={navigation} /> 
+      <Header title="MaritimeHub" user={userName[0] || 'S'} navigation={navigation} />
 
       <ScrollView showsVerticalScrollIndicator={false}>
         <View style={styles.content}>
-          <Text style={styles.welcomeText}>Welcome back, {userName}</Text> 
+          <Text style={styles.welcomeText}>Welcome back, {userName}</Text>
 
           <View style={styles.trackingCard}>
             <Text style={styles.cardTitle}>Marine Tracking</Text>
@@ -150,19 +155,23 @@ const HomeScreen = ({ navigation }) => {
             </View>
           </View>
 
-          <View style={styles.placeholderCard}>
+          <TouchableOpacity 
+            style={styles.placeholderCard}
+            onPress={handleProductSearchPress} 
+          >
             <MaterialCommunityIcons
               name="package-variant-closed"
               size={32}
               color="#A0AEC0"
             />
             <View style={styles.placeholderTextBox}>
-              <Text style={styles.placeholderText}>Tìm kiếm Sản phẩm</Text>
+              <Text style={styles.placeholderText}>Tìm kiếm linh kiện & sản phẩm</Text>
               <Text style={styles.placeholderSubText}>
-                Tính năng sắp ra mắt
+                Các sản phẩm đang chờ bạn khám phá
               </Text>
             </View>
-          </View>
+          </TouchableOpacity>
+          
         </View>
       </ScrollView>
 
