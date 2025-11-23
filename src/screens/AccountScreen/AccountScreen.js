@@ -26,17 +26,20 @@ const AccountScreen = ({ navigation }) => {
   const [hasMore, setHasMore] = useState(true);
   const [userName, setUserName] = useState("User"); 
   const [isDataLoading, setIsDataLoading] = useState(true); 
+  const [profile, setProfile] = useState(null);
   const isFocused = useIsFocused();
 
   useEffect(() => {
     const loadProfileData = async () => {
-      const storedUsername = await getUsername(); 
-      if (storedUsername) {
-        const displayUsername = storedUsername.charAt(0).toUpperCase() + storedUsername.slice(1);
-        setUserName(displayUsername);
+      try {
+        const res = await apiGet("/auth/profile");
+        if (res.status === 200 && res.data) {
+          setProfile(res.data);
+        }
+      } catch (error) {
+        setProfile(null);
       }
       setIsDataLoading(false);
-
       setShips([]);
       setPage(1);
       setHasMore(true);
@@ -221,17 +224,20 @@ const AccountScreen = ({ navigation }) => {
 
       <View style={styles.profileSection}>
         <Image
-          source={{ uri: "https://i.pravatar.cc/300" }}
+          source={{ uri: profile?.avatarUrl || "https://i.pravatar.cc/300" }}
           style={styles.avatar}
         />
         <View style={styles.profileInfoContainer}>
-          <Text style={styles.name}>{userName}</Text> 
+          <Text style={styles.name}>{profile?.fullName || userName}</Text>
           <TouchableOpacity style={styles.editButton}>
             <MaterialIcons name="edit" size={16} color="#003d66" />
             <Text style={styles.editText}>Edit Profile</Text>
           </TouchableOpacity>
           <Text style={styles.interests}>
-            Vessel Management · Logistics · Cargo
+            {profile?.address || "Vessel Management · Logistics · Cargo"}
+          </Text>
+          <Text style={{ color: "#718096", fontSize: 13 }}>
+            {profile?.phoneNumber}
           </Text>
         </View>
       </View>

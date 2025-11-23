@@ -70,11 +70,10 @@ const ProductListScreen = ({ navigation }) => {
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Header có nút Back */}
       <View style={styles.headerContainer}>
         <TouchableOpacity
           style={styles.backButton}
-          onPress={() => navigation.goBack()}
+          onPress={() => navigation.navigate("Home")}
         >
           <Ionicons name="arrow-back-outline" size={24} color="#1C2A3A" />
         </TouchableOpacity>
