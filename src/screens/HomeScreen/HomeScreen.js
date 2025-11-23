@@ -13,9 +13,8 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import BottomNavBar from "../../components/BottomNavBar";
-import Header from "../../components/Header";
+import { apiGet } from "../../ultis/api";
 
-import { getUsername } from "../../auth/authStorage";
 
 const factories = [
   { id: 1, name: "Xưởng", image: require("../../assets/boatyard.png") },
@@ -25,29 +24,34 @@ const suppliers = [
   { id: 1, name: "Nhà Cung Cấp", image: require("../../assets/supplier.jpg") },
 ];
 
-
 const HomeScreen = ({ navigation }) => {
   const [trackingId] = useState("");
   const [userName, setUserName] = useState("Guest");
+  const [avatarUrl, setAvatarUrl] = useState("");
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const loadUsername = async () => {
-      const storedUsername = await getUsername();
-      if (storedUsername) {
-        const displayUsername = storedUsername.charAt(0).toUpperCase() + storedUsername.slice(1);
-        setUserName(displayUsername);
-      } else {
+    const loadProfile = async () => {
+      try {
+        const res = await apiGet("/auth/profile");
+        if (res.status === 200 && res.data) {
+          setUserName(res.data.fullName || "User");
+          setAvatarUrl(res.data.avatarUrl || "https://i.pravatar.cc/300");
+        } else {
+          setUserName("User");
+          setAvatarUrl("https://i.pravatar.cc/300");
+        }
+      } catch (error) {
         setUserName("User");
+        setAvatarUrl("https://i.pravatar.cc/300");
       }
       setIsLoading(false);
     };
-
-    loadUsername();
+    loadProfile();
   }, []);
 
   const handleProductSearchPress = () => {
-    navigation.navigate("ProductListScreen"); 
+    navigation.navigate("ProductListScreen");
   };
 
   if (isLoading) {
@@ -62,7 +66,7 @@ const HomeScreen = ({ navigation }) => {
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" />
-      <Header title="MaritimeHub" user={userName[0] || 'S'} navigation={navigation} />
+      <Header title="MaritimeHub" avatarUrl={avatarUrl} navigation={navigation} />
 
       <ScrollView showsVerticalScrollIndicator={false}>
         <View style={styles.content}>
@@ -155,9 +159,9 @@ const HomeScreen = ({ navigation }) => {
             </View>
           </View>
 
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.placeholderCard}
-            onPress={handleProductSearchPress} 
+            onPress={handleProductSearchPress}
           >
             <MaterialCommunityIcons
               name="package-variant-closed"
@@ -171,7 +175,6 @@ const HomeScreen = ({ navigation }) => {
               </Text>
             </View>
           </TouchableOpacity>
-          
         </View>
       </ScrollView>
 
@@ -180,13 +183,28 @@ const HomeScreen = ({ navigation }) => {
   );
 };
 
+const Header = ({ title, avatarUrl, navigation }) => {
+  return (
+    <View style={styles.headerContainer}>
+      <View style={styles.leftSection}>
+        <Image
+          source={{ uri: avatarUrl || "https://i.pravatar.cc/300" }}
+          style={styles.avatar}
+        />
+        <Text style={styles.headerTitle}>{title}</Text>
+      </View>
+      {/* ...các nút khác nếu có... */}
+    </View>
+  );
+};
+
 export default HomeScreen;
 
 const styles = StyleSheet.create({
   loadingContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     backgroundColor: "#F7FAFC",
   },
   container: {
@@ -328,5 +346,26 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: "#A0AEC0",
     marginTop: 2,
+  },
+  headerContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    padding: 16,
+    backgroundColor: "#fff",
+  },
+  leftSection: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  avatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    marginRight: 12,
+  },
+  headerTitle: {
+    fontSize: 20,
+    fontWeight: "bold",
+    color: "#1C2A3A",
   },
 });

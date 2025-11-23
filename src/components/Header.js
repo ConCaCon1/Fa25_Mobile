@@ -1,4 +1,3 @@
-import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 
@@ -38,7 +37,6 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#003d66',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,

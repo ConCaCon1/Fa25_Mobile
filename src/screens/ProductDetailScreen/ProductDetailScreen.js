@@ -1,7 +1,7 @@
-import  { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   View,
-  Text, 
+  Text,
   Image,
   ActivityIndicator,
   StyleSheet,
@@ -9,7 +9,6 @@ import {
   TouchableOpacity,
   FlatList,
   Modal,
-
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -50,25 +49,29 @@ const ProductDetailScreen = ({ route, navigation }) => {
     navigation.navigate("SelectShipScreen", {
       productId: product.id,
       variantId: variantId,
-      variantName: product.productVariants.find(v => v.id === variantId)?.name || "",
+      variantName:
+        product.productVariants.find((v) => v.id === variantId)?.name || "",
     });
   };
-  
+
   useEffect(() => {
     if (product && selectedVariantId) {
-      const exists = product.productVariants.some(v => v.id === selectedVariantId);
+      const exists = product.productVariants.some(
+        (v) => v.id === selectedVariantId
+      );
       if (!exists) {
         setSelectedVariantId("");
       }
     }
   }, [product, selectedVariantId]);
 
-
   if (loading || !product) {
     return (
       <View style={styles.center}>
         <ActivityIndicator size="large" color="#003d66" />
-        <Text style={{ marginTop: 10, color: '#1C2A3A' }}>Đang tải chi tiết sản phẩm...</Text>
+        <Text style={{ marginTop: 10, color: "#1C2A3A" }}>
+          Đang tải chi tiết sản phẩm...
+        </Text>
       </View>
     );
   }
@@ -103,44 +106,19 @@ const ProductDetailScreen = ({ route, navigation }) => {
 
           <View style={styles.infoCard}>
             <Text style={styles.infoText}>
-              <Text>📦 Danh mục:{" "}</Text>
+              <Text>📦 Danh mục: </Text>
               <Text style={styles.infoBold}>{product.categoryName}</Text>
             </Text>
             <Text style={styles.infoText}>
-              <Text>🏪 Nhà cung cấp:{" "}</Text>
+              <Text>🏪 Nhà cung cấp: </Text>
               <Text style={styles.infoBold}>{product.supplierName}</Text>
             </Text>
           </View>
-
-          <Text style={styles.variantHeader}>
-            {product.isHasVariant ? <Text>Biến thể sản phẩm</Text> : <Text>Không có biến thể</Text>}
-          </Text>
-
-          {product.productVariants.length > 0 ? (
-            <View style={styles.variantList}>
-              {product.productVariants.map((variant) => (
-                <View
-                  key={variant.id}
-                  style={styles.variantItem} 
-                >
-                  <Text style={styles.variantName}>{variant.name}</Text>
-                  <Text style={styles.variantPrice}>{variant.price.toLocaleString()} <Text>VNĐ</Text></Text>
-                </View>
-              ))}
-            </View>
-          ) : (
-            <Text style={styles.noVariant}>Không có biến thể nào.</Text>
-          )}
-
-       
         </View>
       </ScrollView>
 
       <View style={styles.footer}>
-        <TouchableOpacity
-          style={styles.orderButton}
-          onPress={handleOrderNow}
-        >
+        <TouchableOpacity style={styles.orderButton} onPress={handleOrderNow}>
           <Text style={styles.orderButtonText}>Mua hàng</Text>
         </TouchableOpacity>
       </View>
@@ -153,7 +131,6 @@ const ProductDetailScreen = ({ route, navigation }) => {
       >
         <View style={styles.centeredView}>
           <View style={styles.variantModalView}>
-            {/* Nút đóng */}
             <TouchableOpacity
               style={{ position: "absolute", top: 12, right: 16, zIndex: 10 }}
               onPress={() => setVariantModalVisible(false)}
@@ -162,39 +139,62 @@ const ProductDetailScreen = ({ route, navigation }) => {
             </TouchableOpacity>
 
             <Text style={styles.modalTitle}>Chọn Biến thể Sản phẩm</Text>
-            <Text style={styles.modalText}>Vui lòng chọn biến thể bạn muốn đặt hàng:</Text>
+            <Text style={styles.modalText}>
+              Vui lòng chọn biến thể bạn muốn đặt hàng:
+            </Text>
 
-            <ScrollView style={{ width: "100%", maxHeight: 220, marginBottom: 10 }}>
+            <ScrollView
+              style={{ width: "100%", maxHeight: 220, marginBottom: 10 }}
+            >
               {product.productVariants.map((variant) => (
                 <TouchableOpacity
                   key={variant.id}
                   style={[
                     styles.variantOption,
-                    selectedVariantId === variant.id && styles.variantOptionSelected 
+                    selectedVariantId === variant.id &&
+                      styles.variantOptionSelected,
                   ]}
                   onPress={() => setSelectedVariantId(variant.id)}
                 >
-                  <Text style={[styles.variantName, selectedVariantId === variant.id && { color: "#003d66" }]}> 
+                  <Text
+                    style={[
+                      styles.variantName,
+                      selectedVariantId === variant.id && { color: "#003d66" },
+                    ]}
+                  >
                     {variant.name}
                   </Text>
-                  <Text style={[styles.variantPrice, selectedVariantId === variant.id && { color: "#003d66" }]}> 
+                  <Text
+                    style={[
+                      styles.variantPrice,
+                      selectedVariantId === variant.id && { color: "#003d66" },
+                    ]}
+                  >
                     {variant.price.toLocaleString()} <Text>VNĐ</Text>
                   </Text>
                 </TouchableOpacity>
               ))}
             </ScrollView>
 
-            <View style={{ flexDirection: "row", alignItems: "center", marginVertical: 10 }}>
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                marginVertical: 10,
+              }}
+            >
               <TouchableOpacity
                 style={{ padding: 8 }}
-                onPress={() => setQuantity(q => Math.max(1, q - 1))}
+                onPress={() => setQuantity((q) => Math.max(1, q - 1))}
               >
                 <Text style={{ fontSize: 20, fontWeight: "bold" }}>-</Text>
               </TouchableOpacity>
-              <Text style={{ fontSize: 16, marginHorizontal: 12 }}>{quantity}</Text>
+              <Text style={{ fontSize: 16, marginHorizontal: 12 }}>
+                {quantity}
+              </Text>
               <TouchableOpacity
                 style={{ padding: 8 }}
-                onPress={() => setQuantity(q => q + 1)}
+                onPress={() => setQuantity((q) => q + 1)}
               >
                 <Text style={{ fontSize: 20, fontWeight: "bold" }}>+</Text>
               </TouchableOpacity>
@@ -208,7 +208,9 @@ const ProductDetailScreen = ({ route, navigation }) => {
               onPress={() => {
                 if (selectedVariantId) {
                   setVariantModalVisible(false);
-                  const selectedVariant = product.productVariants.find(v => v.id === selectedVariantId);
+                  const selectedVariant = product.productVariants.find(
+                    (v) => v.id === selectedVariantId
+                  );
                   navigation.navigate("SelectShipScreen", {
                     productId: product.id,
                     variantId: selectedVariantId,
@@ -230,7 +232,6 @@ const ProductDetailScreen = ({ route, navigation }) => {
 };
 
 export default ProductDetailScreen;
-
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#F5F9FC" },
@@ -426,7 +427,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     padding: 14,
     elevation: 2,
-    width: "100%", 
+    width: "100%",
     alignItems: "center",
     marginTop: 10,
   },
