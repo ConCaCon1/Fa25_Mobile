@@ -16,7 +16,6 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
 
 import { API_BASE_URL } from "@env";
-// Đảm bảo bạn đã import các hàm saveUsername và saveEmail mới
 import { saveToken, saveRole, saveUsername, saveEmail } from "../../auth/authStorage";
 
 const LoginScreen = ({ navigation }) => {
@@ -47,20 +46,18 @@ const LoginScreen = ({ navigation }) => {
       if (response.ok && data.data?.accessToken) {
         const userData = data.data;
 
-        // --- CẬP NHẬT LOGIC LƯU TRỮ DỮ LIỆU ---
         await saveToken(userData.accessToken);
         
         if (userData.username) {
-            await saveUsername(userData.username); // <-- LƯU USERNAME
+            await saveUsername(userData.username); 
         }
         if (userData.email) {
-            await saveEmail(userData.email);       // <-- LƯU EMAIL
+            await saveEmail(userData.email);      
         }
         
         if (userData.role) {
           await saveRole(userData.role);
         }
-        // ------------------------------------
 
         Alert.alert("Success", "Login successful!", [
           {

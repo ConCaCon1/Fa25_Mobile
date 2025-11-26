@@ -160,7 +160,7 @@ const OrderDetailScreen = ({ route, navigation }) => {
           </View>
           <View style={styles.dottedLine} />
           <View style={styles.mainCardFooter}>
-            <Text style={styles.footerLabel}>Mã đầy đủ system:</Text>
+            <Text style={styles.footerLabel}>Mã đầy đủ đơn hàng:</Text>
             <Text style={styles.footerValue}>{order.id}</Text>
           </View>
         </View>
