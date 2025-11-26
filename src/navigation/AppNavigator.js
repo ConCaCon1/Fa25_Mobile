@@ -27,6 +27,14 @@ import OrderDetailScreen from "../screens/OrderDetailScreen/OrderDetailScreen";
 import CheckoutScreen from "../screens/CheckoutScreen/CheckoutScreen";
 import OrderSuccessScreen from "../screens/OrderSuccessScreen/OrderSuccessScreen";
 import OrderFailScreen from "../screens/OrderFailScreen/OrderFailScreen";
+import SelectDockSlotScreen from "../screens/SelectDockSlotScreen/SelectDockSlotScreen";
+import BookingScreen from "../screens/BookingScreen/BookingScreen";
+import SelectShipDockScreen from "../screens/SelectShipDockScreen/SelectShipDockScreen";
+import ConfirmBookingScreen from "../screens/ConfirmBookingScreen/ConfirmBookingScreen";
+import BookingDetailScreen from "../screens/BookingDetailScreen/BookingDetailScreen";
+import CheckoutDockScreen from "../screens/CheckoutDockScreen/CheckoutDockScreen";
+import BookingSuccessScreen from "../screens/BookingSuccessScreen/BookingSuccessScreen";
+import BookingFailScreen from "../screens/BookingFailScreen/BookingFailScreen";
 
 const Stack = createNativeStackNavigator();
 
@@ -64,6 +72,14 @@ export default function AppNavigator() {
         <Stack.Screen name="CheckoutScreen" component={CheckoutScreen} />
         <Stack.Screen name="OrderSuccessScreen" component={OrderSuccessScreen} />
         <Stack.Screen name="OrderFailScreen" component={OrderFailScreen} />
+        <Stack.Screen name="SelectDockSlotScreen" component={SelectDockSlotScreen} />
+        <Stack.Screen name="BookingScreen" component={BookingScreen} />
+        <Stack.Screen name="SelectShipDockScreen" component={SelectShipDockScreen} />
+        <Stack.Screen name="ConfirmBookingScreen" component={ConfirmBookingScreen} />
+        <Stack.Screen name= "BookingDetailScreen" component={BookingDetailScreen} />
+        <Stack.Screen name="CheckoutDockScreen" component={CheckoutDockScreen} />
+        <Stack.Screen name="BookingSuccessScreen" component={BookingSuccessScreen} />
+        <Stack.Screen name="BookingFailScreen" component={BookingFailScreen} />
         <Stack.Screen
           name="CaptainAccount"
           children={(props) => (

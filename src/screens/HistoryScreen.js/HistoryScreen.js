@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -7,137 +7,151 @@ import {
   ScrollView,
   StyleSheet,
   StatusBar,
+  ActivityIndicator,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import BottomNavBar from "../../components/BottomNavBar";
+import { apiGet } from "../../ultis/api"; // Giữ nguyên đường dẫn import của bạn
+import BottomNavBar from "../../components/BottomNavBar"; // Giữ nguyên đường dẫn import của bạn
 
-const mockBookings = [
-  {
-    id: 1,
-    name: "Nam Hai Shipyard",
-    date: "18/11/2025",
-    time: "08:00 - 17:00",
-    dock: "Dock A1",
-    status: "paid",
-    price: "92,000,000 VND",
-    image:
-      "https://images.unsplash.com/photo-1570129477492-45c003edd2be?auto=format&fit=crop&w=800&q=60",
-  },
-  {
-    id: 2,
-    name: "Bien Dong Mechanics",
-    date: "18/11/2025",
-    time: "09:00 - 17:00",
-    dock: "Dock B2",
-    status: "unpaid",
-    price: "120,000,000 VND",
-    image:
-      "https://images.unsplash.com/photo-1603366615917-1fa6dad5c4b0?auto=format&fit=crop&w=800&q=60",
-  },
-  {
-    id: 3,
-    name: "Hoa Binh Ship Repair",
-    date: "19/11/2025",
-    time: "07:30 - 16:30",
-    dock: "Dock C4",
-    status: "canceled",
-    price: "92,000,000 VND",
-    image:
-      "https://images.unsplash.com/photo-1501549538845-6c9ad7e9e273?auto=format&fit=crop&w=800&q=60",
-  },
-];
+// Màu sắc chủ đạo (có thể tách ra file constants)
+const COLORS = {
+  primary: "#003d66", // Xanh đậm chủ đạo
+  primaryLight: "#e0f7fa", // Xanh nhạt cho nền
+  accent: "#28a745", // Xanh lá cho trạng thái thành công
+  warning: "#ffc107", // Vàng cho trạng thái chờ
+  danger: "#dc3545", // Đỏ cho trạng thái hủy
+  textDark: "#1a202c",
+  textMedium: "#4a5568",
+  textLight: "#718096",
+  white: "#FFFFFF",
+  grayBackground: "#F8FAFC",
+  borderColor: "#e2e8f0",
+};
 
 const HistoryScreen = ({ navigation }) => {
-  const [activeTab, setActiveTab] = useState("Completed");
+  const [bookings, setBookings] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  const filteredBookings =
-    activeTab === "Completed"
-      ? mockBookings.filter((b) => b.status === "paid" || b.status === "canceled")
-      : mockBookings.filter((b) => b.status === "unpaid");
+  useEffect(() => {
+    const fetchBookings = async () => {
+      try {
+        const res = await apiGet("/bookings");
+        setBookings(res.data.items || []);
+      } catch (error) {
+        console.log("Lỗi khi lấy danh sách booking:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchBookings();
+  }, []);
+
+  const getStatusStyle = (status) => {
+    switch (status) {
+      case "Confirmed":
+        return { backgroundColor: COLORS.accent, text: "Đã thanh toán" };
+      case "Pending":
+        return { backgroundColor: COLORS.warning, text: "Đang chờ" };
+      case "Canceled":
+        return { backgroundColor: COLORS.danger, text: "Đã hủy" };
+      default:
+        return { backgroundColor: COLORS.textLight, text: "Không xác định" };
+    }
+  };
+
+  const formatCurrency = (amount) => {
+    return new Intl.NumberFormat('vi-VN', {
+      style: 'currency',
+      currency: 'VND',
+    }).format(amount);
+  };
+
+  const getPlaceholderImage = () => {
+    return "https://png.pngtree.com/png-vector/20250728/ourlarge/pngtree-vintage-trawler-fishing-boat-vector-icon-element-png-image_16880913.webp";
+  };
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" />
-      <View style={styles.header}>
-        <Text style={styles.title}>Booking History</Text>
-      </View>
+      <StatusBar barStyle="dark-content" backgroundColor={COLORS.white} />
 
-      <View style={styles.tabs}>
-        <TouchableOpacity
-          style={[styles.tabButton, activeTab === "Completed" && styles.tabButtonActive]}
-          onPress={() => setActiveTab("Completed")}
-        >
-          <Text style={[styles.tabText, activeTab === "Completed" && styles.tabTextActive]}>
-            COMPLETED
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.tabButton, activeTab === "Pending" && styles.tabButtonActive]}
-          onPress={() => setActiveTab("Pending")}
-        >
-          <Text style={[styles.tabText, activeTab === "Pending" && styles.tabTextActive]}>
-            PENDING
-          </Text>
-        </TouchableOpacity>
+      <View style={styles.header}>
+        <Text style={styles.title}>Lịch sử đặt lịch</Text>
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContainer}>
-        {filteredBookings.map((item) => (
-          <View key={item.id} style={styles.card}>
-            <Image source={{ uri: item.image }} style={styles.image} />
-            <View style={styles.infoContainer}>
-              <Text style={styles.name}>{item.name}</Text>
-              <View style={styles.detailRow}>
-                <MaterialCommunityIcons name="calendar-month-outline" size={14} color="#5A6A7D" />
-                <Text style={styles.detailText}>{item.date}</Text>
-              </View>
-              <View style={styles.detailRow}>
-                <MaterialCommunityIcons name="clock-time-four-outline" size={14} color="#5A6A7D" />
-                <Text style={styles.detailText}>{item.time}</Text>
-              </View>
-              <View style={styles.detailRow}>
-                <MaterialCommunityIcons name="anchor" size={14} color="#5A6A7D" />
-                <Text style={styles.detailText}>{item.dock}</Text>
-              </View>
-              
-              <Text style={[
-                  styles.statusText,
-                  item.status === 'paid' && styles.paid,
-                  item.status === 'unpaid' && styles.unpaid,
-                  item.status === 'canceled' && styles.canceled,
-                ]}>
-                {item.status === 'paid' ? `Paid: ${item.price}`
-                : item.status === 'unpaid' ? `Unpaid: ${item.price}`
-                : 'Canceled'}
-              </Text>
-
-              <View style={styles.actionRow}>
-                {item.status === 'paid' && (
-                  <TouchableOpacity style={styles.reviewBtn}>
-                    <Text style={styles.reviewBtnText}>Review</Text>
-                  </TouchableOpacity>
-                )}
-                {item.status === 'unpaid' && (
-                  <>
-                    <TouchableOpacity style={styles.rejectBtn}>
-                      <Text style={styles.rejectBtnText}>Reject</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity style={styles.acceptBtn}>
-                      <Text style={styles.acceptBtnText}>Accept</Text>
-                    </TouchableOpacity>
-                  </>
-                )}
-                {item.status === 'canceled' && (
-                  <TouchableOpacity style={[styles.reviewBtn, {backgroundColor: '#5A6A7D'}]}>
-                    <Text style={styles.reviewBtnText}>Review</Text>
-                  </TouchableOpacity>
-                )}
-              </View>
-            </View>
+        {loading ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color={COLORS.primary} />
+            <Text style={styles.loadingText}>Đang tải lịch sử booking...</Text>
           </View>
-        ))}
+        ) : bookings.length === 0 ? (
+          <View style={styles.emptyContainer}>
+            <MaterialCommunityIcons name="sail-boat" size={80} color={COLORS.textLight} />
+            <Text style={styles.emptyTextTitle}>Không có booking nào</Text>
+            <Text style={styles.emptyTextSubtitle}>Hãy bắt đầu đặt chỗ cho thuyền của bạn ngay!</Text>
+          </View>
+        ) : (
+          bookings.map((item) => {
+            const statusInfo = getStatusStyle(item.status);
+            return (
+              <TouchableOpacity
+                key={item.id}
+                style={styles.card}
+                onPress={() => navigation.navigate("BookingDetailScreen", { bookingId: item.id })}
+                activeOpacity={0.8}
+              >
+                <Image
+                  source={{ uri: getPlaceholderImage() }} 
+                  style={styles.image}
+                />
+                <View style={styles.infoContainer}>
+                  <Text style={styles.name}>{item.shipName || "Thuyền không tên"}</Text>
+                  <Text style={styles.boatyardName}>{item.boatyardName || "Bến tàu không rõ"}</Text>
+
+                  <View style={styles.detailGroup}>
+                    <View style={styles.detailRow}>
+                      <MaterialCommunityIcons name="calendar-month-outline" size={16} color={COLORS.textMedium} />
+                      <Text style={styles.detailText}>
+                        {new Date(item.startTime).toLocaleDateString("vi-VN")}
+                      </Text>
+                    </View>
+                    <View style={styles.detailRow}>
+                      <MaterialCommunityIcons name="clock-time-four-outline" size={16} color={COLORS.textMedium} />
+                      <Text style={styles.detailText}>
+                        {new Date(item.startTime).toLocaleTimeString("vi-VN", {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}{" "}
+                        -{" "}
+                        {new Date(item.endTime).toLocaleTimeString("vi-VN", {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </Text>
+                    </View>
+                    <View style={styles.detailRow}>
+                      <MaterialCommunityIcons name="anchor" size={16} color={COLORS.textMedium} />
+                      <Text style={styles.detailText}>{item.dockSlotName || "Chưa có vị trí"}</Text>
+                    </View>
+                  </View>
+                  
+                  {item.totalAmount !== undefined && (
+                    <Text style={styles.totalAmountText}>
+                      Tổng: <Text style={{fontWeight: 'bold', color: COLORS.primary}}>{formatCurrency(item.totalAmount)}</Text>
+                    </Text>
+                  )}
+                </View>
+
+                <View style={[styles.statusChip, { backgroundColor: statusInfo.backgroundColor }]}>
+                  <Text style={styles.statusChipText}>{statusInfo.text}</Text>
+                </View>
+              </TouchableOpacity>
+            );
+          })
+        )}
       </ScrollView>
+
       <BottomNavBar activeScreen="History" navigation={navigation} />
     </SafeAreaView>
   );
@@ -148,132 +162,129 @@ export default HistoryScreen;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F0F4F8",
+    backgroundColor: COLORS.grayBackground,
   },
   header: {
-    padding: 16,
-    alignItems: 'center',
-    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 20,
+    paddingVertical: 15,
+    backgroundColor: COLORS.white,
     borderBottomWidth: 1,
-    borderBottomColor: '#E2E8F0'
+    borderBottomColor: COLORS.borderColor,
+    alignItems: "center",
   },
   title: {
-    fontSize: 20,
-    fontWeight: "bold",
-    color: "#1C2A3A",
-  },
-  tabs: {
-    flexDirection: "row",
-    justifyContent: "center",
-    paddingVertical: 12,
-    backgroundColor: '#FFFFFF',
-  },
-  tabButton: {
-    paddingVertical: 8,
-    paddingHorizontal: 20,
-    borderRadius: 20,
-    borderWidth: 1.5,
-    borderColor: "#E2E8F0",
-    marginHorizontal: 8,
-  },
-  tabButtonActive: {
-    backgroundColor: "#003d66",
-    borderColor: "#003d66",
-  },
-  tabText: {
-    color: "#5A6A7D",
-    fontWeight: "600",
-  },
-  tabTextActive: {
-    color: "#FFFFFF",
+    fontSize: 22,
+    fontWeight: "800",
+    color: COLORS.textDark,
   },
   scrollContainer: {
     padding: 16,
-    paddingBottom: 80, // Space for bottom nav
+    paddingBottom: 100, // Để không bị BottomNavBar che mất item cuối
   },
   card: {
-    backgroundColor: "#FFFFFF",
-    borderRadius: 16,
+    backgroundColor: COLORS.white,
+    borderRadius: 15,
     flexDirection: "row",
-    padding: 12,
+    padding: 15,
     marginBottom: 16,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
+    // Modern Shadow
+    shadowColor: COLORS.primary,
+    shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 5,
+    shadowRadius: 10,
+    elevation: 8,
+    position: 'relative', // Quan trọng cho chip trạng thái
   },
   image: {
-    width: 90,
-    height: '100%',
+    width: 100,
+    height: 120, // Tăng chiều cao ảnh để cân đối hơn
     borderRadius: 12,
+    marginRight: 15,
+    resizeMode: 'cover',
   },
   infoContainer: {
     flex: 1,
-    marginLeft: 12,
-    justifyContent: 'space-between',
+    justifyContent: "space-between",
   },
   name: {
-    color: "#1C2A3A",
-    fontWeight: "bold",
-    fontSize: 16,
+    color: COLORS.textDark,
+    fontWeight: "700",
+    fontSize: 17,
     marginBottom: 4,
   },
+  boatyardName: {
+    color: COLORS.textMedium,
+    fontSize: 14,
+    marginBottom: 8,
+  },
+  detailGroup: {
+    marginTop: 5,
+    marginBottom: 8,
+  },
   detailRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 4,
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 4,
   },
   detailText: {
-    color: "#5A6A7D",
+    color: COLORS.textMedium,
     fontSize: 13,
-    marginLeft: 6,
+    marginLeft: 8,
   },
-  statusText: {
-    marginTop: 8,
-    fontWeight: "bold",
+  totalAmountText: {
     fontSize: 14,
+    color: COLORS.textMedium,
+    marginTop: 5,
   },
-  paid: { color: "#28a745" }, // Green
-  unpaid: { color: "#ffc107" }, // Orange
-  canceled: { color: "#dc3545" }, // Red
-  actionRow: {
-    flexDirection: "row",
-    marginTop: 10,
-  },
-  reviewBtn: {
-    backgroundColor: "#003d66",
-    paddingHorizontal: 16,
-    paddingVertical: 8,
+
+  // Status Chip
+  statusChip: {
+    position: 'absolute',
+    top: 10,
+    right: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
     borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  reviewBtnText: {
-    color: "#FFFFFF",
-    fontWeight: "600",
+  statusChipText: {
+    color: COLORS.white,
     fontSize: 12,
+    fontWeight: '600',
   },
-  rejectBtn: {
-    borderWidth: 1.5,
-    borderColor: "#dc3545",
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 8,
-    marginRight: 8,
+
+  // Loading & Empty States
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    marginTop: 50,
   },
-  rejectBtnText: {
-    color: "#dc3545",
-    fontWeight: "600",
-    fontSize: 12,
+  loadingText: {
+    marginTop: 15,
+    fontSize: 16,
+    color: COLORS.textMedium,
   },
-  acceptBtn: {
-    backgroundColor: "#28a745",
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 8,
+  emptyContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    marginTop: 80,
+    paddingHorizontal: 20,
   },
-  acceptBtnText: {
-    color: "#FFFFFF",
-    fontWeight: "600",
-    fontSize: 12,
+  emptyTextTitle: {
+    fontSize: 20,
+    fontWeight: "700",
+    color: COLORS.textDark,
+    marginTop: 20,
+    textAlign: 'center',
+  },
+  emptyTextSubtitle: {
+    fontSize: 15,
+    color: COLORS.textMedium,
+    marginTop: 8,
+    textAlign: 'center',
+    lineHeight: 22,
   },
 });

@@ -97,7 +97,7 @@ const HomeScreen = ({ navigation }) => {
               <Text style={styles.trackButtonText}>Track Now</Text>
             </TouchableOpacity>
           </View>
-<View style={styles.serviceSection}>
+{/* <View style={styles.serviceSection}>
   <View style={styles.serviceHeader}>
     <Text style={styles.serviceTitle}>Booking Services</Text>
 
@@ -122,7 +122,7 @@ const HomeScreen = ({ navigation }) => {
       </TouchableOpacity>
     ))}
   </ScrollView>
-</View>
+</View> */}
           <View style={styles.featureSection}>
             <View style={styles.featureColumn}>
               <View style={styles.featureBox}>

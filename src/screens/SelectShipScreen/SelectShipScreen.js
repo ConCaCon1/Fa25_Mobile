@@ -14,7 +14,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { apiGet, apiPost } from "../../ultis/api"; 
 
 const SelectShipScreen = ({ route, navigation }) => {
-  const { productId, variantId, variantName } = route.params;
+  const { productId, variantId, variantName, mode } = route.params;
   const [shipList, setShipList] = useState([]);
   const [filteredShipList, setFilteredShipList] = useState([]);
   const [selectedShipId, setSelectedShipId] = useState("");

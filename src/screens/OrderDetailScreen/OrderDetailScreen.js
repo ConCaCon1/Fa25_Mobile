@@ -27,17 +27,17 @@ const formatCurrency = (amount) => {
 
 const getStatusConfig = (status) => {
   switch (status) {
-    case "Completed":
-    case "Delivered":
-      return { bg: "#E6F4EA", text: "#1E8E3E", label: "Hoàn thành", icon: "checkmark-circle" };
     case "Pending":
-      return { bg: "#FFF4E5", text: "#FF9800", label: "Chờ xử lý", icon: "time" };
-    case "Cancelled":
-      return { bg: "#FCE8E6", text: "#D93025", label: "Đã hủy", icon: "close-circle" };
-    case "Processing":
-      return { bg: "#E8F0FE", text: "#1967D2", label: "Đang xử lý", icon: "sync" };
+      return { bg: "#FEF7E0", text: "#F9AB00", label: "Chờ xử lý" };
+
+    case "Approved":
+      return { bg: "#E6F4EA", text: "#1E8E3E", label: "Đã duyệt" };
+
+    case "Rejected":
+      return { bg: "#FCE8E6", text: "#D93025", label: "Bị từ chối" };
+
     default:
-      return { bg: "#F1F3F4", text: "#5F6368", label: status, icon: "information-circle" };
+      return { bg: "#F1F3F4", text: "#5F6368", label: status };
   }
 };
 

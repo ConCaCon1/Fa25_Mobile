@@ -83,7 +83,6 @@ const SupplierListScreen = ({ navigation }) => {
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Header có nút Back */}
       <View style={styles.headerContainer}>
         <TouchableOpacity
           style={styles.backButton}
@@ -94,7 +93,6 @@ const SupplierListScreen = ({ navigation }) => {
         <Text style={styles.headerTitle}>Tất cả nhà cung cấp</Text>
       </View>
 
-      {/* Ô tìm kiếm */}
       <View style={styles.searchContainer}>
         <Ionicons
           name="search-outline"
@@ -111,7 +109,6 @@ const SupplierListScreen = ({ navigation }) => {
         />
       </View>
 
-      {/* Danh sách nhà cung cấp */}
       {loading ? (
         <ActivityIndicator size="large" color="#003d66" style={{ flex: 1 }} />
       ) : (
