@@ -61,44 +61,37 @@ const CheckoutScreen = ({ route, navigation }) => {
             onLoadStart={() => setLoadingWeb(true)}
             onLoadEnd={() => setLoadingWeb(false)}
             onNavigationStateChange={(navState) => {
-              if (navState.url.includes("success")) {
+              const url = navState.url.toLowerCase();
+
+              if (url.includes("success") || url.includes("status=paid")) {
                 setShowWebView(false);
                 navigation.replace("OrderSuccessScreen", { orderData: data });
+                return;
+              }
+
+              if (
+                url.includes("cancel") ||
+                url.includes("status=cancelled") ||
+                url.includes("status=canceled")
+              ) {
+                setShowWebView(false);
+                navigation.replace("OrderFailScreen", {
+                  orderData: data,
+                  reason: "Thanh toán bị hủy",
+                });
+                return;
+              }
+
+              if (url.includes("error") || url.includes("failed")) {
+                setShowWebView(false);
+                navigation.replace("OrderFailScreen", {
+                  orderData: data,
+                  reason: "Thanh toán thất bại",
+                });
               }
             }}
             style={{ flex: 1 }}
           />
-
-       
-
-          <View style={styles.bottomBar}>
-            <TouchableOpacity
-              style={styles.cancelButton}
-              onPress={() => {
-                Alert.alert(
-                  "Hủy thanh toán",
-                  "Bạn có chắc chắn muốn hủy thanh toán đơn hàng này?",
-                  [
-                    { text: "Không", style: "cancel" },
-                    {
-                      text: "Hủy thanh toán",
-                      style: "destructive",
-                      onPress: () => {
-                        setShowWebView(false);
-                        navigation.replace("OrderFailScreen", {
-                          orderData: data,
-                          reason: "Người dùng đã hủy thanh toán",
-                        });
-                      },
-                    },
-                  ],
-                  { cancelable: true }
-                );
-              }}
-            >
-              <Text style={styles.cancelButtonText}>Hủy thanh toán</Text>
-            </TouchableOpacity>
-          </View>
         </SafeAreaView>
       </Modal>
     </SafeAreaView>

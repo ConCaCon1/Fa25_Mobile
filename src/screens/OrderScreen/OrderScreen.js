@@ -13,6 +13,8 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { apiGet } from "../../ultis/api";
 import BottomNavBar from "../../components/BottomNavBar";
 
+const PAGE_SIZE = 5; 
+
 const formatCurrency = (amount) => {
   return new Intl.NumberFormat("vi-VN", {
     style: "currency",
@@ -22,31 +24,40 @@ const formatCurrency = (amount) => {
 
 const getStatusStyle = (status) => {
   switch (status) {
-    case "Completed":
-    case "Delivered":
-      return { bg: "#E6F4EA", text: "#1E8E3E", label: "Hoàn thành" };
     case "Pending":
       return { bg: "#FEF7E0", text: "#F9AB00", label: "Chờ xử lý" };
-    case "Cancelled":
-      return { bg: "#FCE8E6", text: "#D93025", label: "Đã hủy" };
-    case "Processing":
-      return { bg: "#E8F0FE", text: "#1967D2", label: "Đang xử lý" };
+
+    case "Approved":
+      return { bg: "#E6F4EA", text: "#1E8E3E", label: "Đã duyệt" };
+
+    case "Rejected":
+      return { bg: "#FCE8E6", text: "#D93025", label: "Bị từ chối" };
+
     default:
       return { bg: "#F1F3F4", text: "#5F6368", label: status };
   }
 };
 
 const OrderScreen = ({ navigation }) => {
-  const [orders, setOrders] = useState([]);
+  const [allOrders, setAllOrders] = useState([]);
+  const [visibleOrders, setVisibleOrders] = useState([]);
+  
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [searchText, setSearchText] = useState("");
+  
+  const [currentPage, setCurrentPage] = useState(1);
 
   const fetchOrders = async () => {
     try {
-      const res = await apiGet("/orders?page=1&pageSize=20");
+   
+      const res = await apiGet("/orders?page=1&pageSize=1000");
+      
       if (res?.data?.items) {
-        setOrders(res.data.items);
+        setAllOrders(res.data.items);
+      } else if (Array.isArray(res?.data)) {
+        setAllOrders(res.data);
       }
     } catch (error) {
       console.log("Error fetching orders:", error);
@@ -60,18 +71,43 @@ const OrderScreen = ({ navigation }) => {
     fetchOrders();
   }, []);
 
+  useEffect(() => {
+    let filtered = allOrders;
+    if (searchText) {
+      filtered = allOrders.filter((item) => {
+        const shortId = item.id.toString().slice(-6);
+        return shortId.includes(searchText);
+      });
+    }
+
+
+    const endIndex = currentPage * PAGE_SIZE;
+    const paginatedData = filtered.slice(0, endIndex);
+
+    setVisibleOrders(paginatedData);
+    setLoadingMore(false); 
+  }, [allOrders, searchText, currentPage]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchText]);
+
   const onRefresh = useCallback(() => {
     setRefreshing(true);
+    setCurrentPage(1); 
     fetchOrders();
   }, []);
 
-  const filteredOrders = useMemo(() => {
-    if (!searchText) return orders;
-    return orders.filter((item) => {
-      const shortId = item.id.toString().slice(-6);
-      return shortId.includes(searchText);
-    });
-  }, [orders, searchText]);
+  const handleLoadMore = () => {
+    if (loadingMore || searchText) return;
+    if (visibleOrders.length >= allOrders.length) return;
+
+    setLoadingMore(true);
+    
+    setTimeout(() => {
+      setCurrentPage((prev) => prev + 1);
+    }, 500);
+  };
 
   const renderItem = ({ item }) => {
     const statusStyle = getStatusStyle(item.status);
@@ -118,6 +154,16 @@ const OrderScreen = ({ navigation }) => {
     );
   };
 
+  const renderFooter = () => {
+    if (!loadingMore || visibleOrders.length >= allOrders.length) return <View style={{ height: 20 }} />;
+    return (
+      <View style={styles.footerLoading}>
+        <ActivityIndicator size="small" color="#003d66" />
+        <Text style={styles.footerText}>Đang tải thêm...</Text>
+      </View>
+    );
+  };
+
   const renderEmptyComponent = () => (
     <View style={styles.emptyContainer}>
       <Text style={styles.emptyText}>
@@ -140,7 +186,7 @@ const OrderScreen = ({ navigation }) => {
         <View style={styles.searchContainer}>
           <TextInput
             style={styles.searchInput}
-            placeholder="Tìm theo mã đơn (ví dụ: 123456)"
+            placeholder="Tìm theo mã đơn (6 kí tự cuối mã đơn)"
             placeholderTextColor="#8898AA"
             value={searchText}
             onChangeText={setSearchText}
@@ -156,8 +202,8 @@ const OrderScreen = ({ navigation }) => {
         </View>
       ) : (
         <FlatList
-          data={filteredOrders}
-          keyExtractor={(item) => item.id.toString()}
+          data={visibleOrders} 
+          keyExtractor={(item, index) => item.id.toString() + index}
           renderItem={renderItem}
           contentContainerStyle={styles.listContent}
           showsVerticalScrollIndicator={false}
@@ -165,6 +211,9 @@ const OrderScreen = ({ navigation }) => {
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={["#003d66"]} />
           }
+          onEndReached={handleLoadMore}
+          onEndReachedThreshold={0.5}
+          ListFooterComponent={renderFooter}
         />
       )}
 
@@ -322,4 +371,15 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "#8898AA",
   },
+  footerLoading: {
+    paddingVertical: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexDirection: 'row',
+  },
+  footerText: {
+    marginLeft: 8,
+    color: "#003d66",
+    fontSize: 14,
+  }
 });
