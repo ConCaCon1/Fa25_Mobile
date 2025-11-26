@@ -15,7 +15,7 @@ const ShipMapScreen = ({ route }) => {
         latitude={parseFloat(latitude)}
         longitude={parseFloat(longitude)}
         popupText={name || "Tàu không rõ tên"}
-        icon="🛳"
+        icon="⛵"
       />
 
       <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>

@@ -14,6 +14,11 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import BottomNavBar from "../../components/BottomNavBar";
 import { apiGet } from "../../ultis/api";
+const services = [
+  { id: 1, name: "Home Cleaning", image: require("../../assets/boatyard.png") },
+  { id: 2, name: "Bathroom Cleaning", image: require("../../assets/boatyard.png") },
+  { id: 3, name: "Disinfection", image: require("../../assets/boatyard.png") },
+];
 
 
 const factories = [
@@ -92,7 +97,32 @@ const HomeScreen = ({ navigation }) => {
               <Text style={styles.trackButtonText}>Track Now</Text>
             </TouchableOpacity>
           </View>
+<View style={styles.serviceSection}>
+  <View style={styles.serviceHeader}>
+    <Text style={styles.serviceTitle}>Booking Services</Text>
 
+    <TouchableOpacity
+      onPress={() => navigation.navigate("BookingServiceListScreen")}
+    >
+      <Text style={styles.serviceSeeAll}>See All</Text>
+    </TouchableOpacity>
+  </View>
+
+  <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+    {services.map((item, index) => (
+      <TouchableOpacity
+        key={`service-${item.id}-${index}`}
+        style={styles.serviceCard}
+        onPress={() =>
+          navigation.navigate("BookingServiceDetailScreen", { serviceId: item.id })
+        }
+      >
+        <Image source={item.image} style={styles.serviceImage} />
+        <Text style={styles.serviceText}>{item.name}</Text>
+      </TouchableOpacity>
+    ))}
+  </ScrollView>
+</View>
           <View style={styles.featureSection}>
             <View style={styles.featureColumn}>
               <View style={styles.featureBox}>
@@ -140,6 +170,7 @@ const HomeScreen = ({ navigation }) => {
                     />
                   </TouchableOpacity>
                 </View>
+
 
                 {suppliers.map((item, index) => (
                   <TouchableOpacity
@@ -368,4 +399,56 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     color: "#1C2A3A",
   },
+  serviceSection: {
+  marginBottom: 25,
+},
+
+serviceHeader: {
+  flexDirection: "row",
+  justifyContent: "space-between",
+  alignItems: "center",
+  marginBottom: 12,
+},
+
+serviceTitle: {
+  fontSize: 18,
+  fontWeight: "bold",
+  color: "#1C2A3A",
+},
+
+serviceSeeAll: {
+  fontSize: 14,
+  color: "#6C63FF",
+  fontWeight: "600",
+},
+
+serviceCard: {
+  width: 140,
+  height: 160,
+  backgroundColor: "#fff",
+  borderRadius: 16,
+  marginRight: 12,
+  padding: 10,
+  justifyContent: "center",
+  alignItems: "center",
+  shadowColor: "#000",
+  shadowOpacity: 0.1,
+  shadowRadius: 6,
+  elevation: 3,
+},
+
+serviceImage: {
+  width: 100,
+  height: 100,
+  borderRadius: 12,
+  marginBottom: 8,
+},
+
+serviceText: {
+  fontSize: 14,
+  fontWeight: "600",
+  textAlign: "center",
+  color: "#1A202C",
+},
+
 });

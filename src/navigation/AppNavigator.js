@@ -22,6 +22,11 @@ import ProtectedCaptainRoute from "./ProtectedCaptainRoute";
 import ProductListScreen from "../screens/ProductListScreen/ProductListScreen";
 import ProductDetailScreen from "../screens/ProductDetailScreen/ProductDetailScreen";
 import SelectShipScreen from "../screens/SelectShipScreen/SelectShipScreen";
+import OrderScreen from "../screens/OrderScreen/OrderScreen";
+import OrderDetailScreen from "../screens/OrderDetailScreen/OrderDetailScreen";
+import CheckoutScreen from "../screens/CheckoutScreen/CheckoutScreen";
+import OrderSuccessScreen from "../screens/OrderSuccessScreen/OrderSuccessScreen";
+import OrderFailScreen from "../screens/OrderFailScreen/OrderFailScreen";
 
 const Stack = createNativeStackNavigator();
 
@@ -54,6 +59,11 @@ export default function AppNavigator() {
         <Stack.Screen name="ProductListScreen" component={ProductListScreen} />
         <Stack.Screen name="ProductDetailScreen" component={ProductDetailScreen} />
         <Stack.Screen name="SelectShipScreen" component={SelectShipScreen} />
+        <Stack.Screen name="OrderScreen" component={OrderScreen} />
+        <Stack.Screen name="OrderDetailScreen" component={OrderDetailScreen} />
+        <Stack.Screen name="CheckoutScreen" component={CheckoutScreen} />
+        <Stack.Screen name="OrderSuccessScreen" component={OrderSuccessScreen} />
+        <Stack.Screen name="OrderFailScreen" component={OrderFailScreen} />
         <Stack.Screen
           name="CaptainAccount"
           children={(props) => (

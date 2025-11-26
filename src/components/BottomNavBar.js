@@ -7,6 +7,7 @@ const navItems = [
   { name: 'History', icon: 'history', target: 'History' },
   { name: 'Map', icon: 'map-marker-radius', target: 'MapScreen' },
   { name: 'Notifications', icon: 'bell-outline', target: 'Notification' },
+  { name: 'Cart', icon: 'cart-outline', target: 'OrderScreen' },     
   { name: 'Account', icon: 'account-circle-outline', target: 'Account' },
 ];
 
@@ -23,12 +24,8 @@ const BottomNavBar = ({ activeScreen, navigation }) => {
             style={styles.navItem}
             onPress={() => navigation.navigate(item.target)}
           >
-        
             {isActive && <View style={styles.activePill} />}
-            
             <MaterialCommunityIcons name={item.icon} size={28} color={iconColor} />
-            
-            
           </Pressable>
         );
       })}
@@ -50,10 +47,7 @@ const styles = StyleSheet.create({
     height: 65,
     paddingHorizontal: 10,
     shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
+    shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.1,
     shadowRadius: 8,
     elevation: 10,
@@ -67,9 +61,9 @@ const styles = StyleSheet.create({
   activePill: {
     width: 50,
     height: 50,
-    borderRadius: 25, 
+    borderRadius: 25,
     backgroundColor: '#003d66',
-    position: 'absolute', 
+    position: 'absolute',
   },
 });
 
