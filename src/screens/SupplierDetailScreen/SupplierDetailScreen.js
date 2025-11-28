@@ -5,62 +5,80 @@ import {
   StyleSheet,
   Image,
   TouchableOpacity,
-  Linking,
   ActivityIndicator,
-  ScrollView,
+  FlatList,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { apiGet } from "../../ultis/api";
+import { apiGet } from "../../ultis/api"; // Đảm bảo đường dẫn import đúng
 
-const SupplierDetailScreen = ({ route, navigation }) => {
-  const { id } = route.params;
-  const [supplier, setSupplier] = useState(null);
+const SupplierProductsScreen = ({ route, navigation }) => {
+  const { id } = route.params; // ID của nhà cung cấp
+  const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [supplierName, setSupplierName] = useState("Nhà cung cấp"); // Lưu tên tạm
 
   useEffect(() => {
-    const fetchSupplierDetail = async () => {
+    const fetchProducts = async () => {
       try {
         setLoading(true);
-        const json = await apiGet(`/suppliers/${id}`);
-        if (json?.data) {
-          setSupplier(json.data);
+        // Chỉ gọi API lấy danh sách sản phẩm
+        const response = await apiGet(`/suppliers/${id}/products`);
+
+        if (response?.data?.items) {
+          setProducts(response.data.items);
+          
+          // Mẹo: Lấy tên nhà cung cấp từ sản phẩm đầu tiên (nếu có)
+          // để hiển thị lên tiêu đề mà không cần gọi API chi tiết supplier
+          if (response.data.items.length > 0) {
+            setSupplierName(response.data.items[0].supplierName);
+          }
         }
       } catch (error) {
-        console.log("Error fetching supplier detail:", error);
+        console.log("Error fetching products:", error);
       } finally {
         setLoading(false);
       }
     };
-    fetchSupplierDetail();
+
+    fetchProducts();
   }, [id]);
 
-  const handleCall = (phone) => {
-    if (phone) Linking.openURL(`tel:${phone}`);
-  };
-
-  const handleEmail = (email) => {
-    if (email) Linking.openURL(`mailto:${email}`);
-  };
-
-  if (loading) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#003d66" />
+  // Render từng item sản phẩm
+  const renderProductItem = ({ item }) => (
+    <TouchableOpacity
+      style={styles.productCard}
+      onPress={() => {
+        // Xử lý khi bấm vào sản phẩm (ví dụ: sang trang chi tiết sản phẩm)
+        console.log("Xem sản phẩm:", item.id);
+      }}
+    >
+      <Image
+        source={{
+          uri: item.imageUrl || "https://via.placeholder.com/150",
+        }}
+        style={styles.productImage}
+        resizeMode="cover"
+      />
+      <View style={styles.productInfo}>
+        <Text style={styles.categoryBadge}>{item.categoryName}</Text>
+        <Text style={styles.productName} numberOfLines={2}>
+          {item.name}
+        </Text>
+        <Text style={styles.productDesc} numberOfLines={1}>
+            {item.description}
+        </Text>
+        <Text style={styles.dateText}>
+            Ngày tạo: {new Date(item.createdDate).toLocaleDateString('vi-VN')}
+        </Text>
       </View>
-    );
-  }
-
-  if (!supplier) {
-    return (
-      <View style={styles.loadingContainer}>
-        <Text style={{ color: "#5A6A7D" }}>Không tìm thấy thông tin nhà cung cấp 😢</Text>
-      </View>
-    );
-  }
+      <Ionicons name="chevron-forward" size={20} color="#C4C4C4" />
+    </TouchableOpacity>
+  );
 
   return (
     <SafeAreaView style={styles.container}>
+      {/* Header */}
       <View style={styles.headerContainer}>
         <TouchableOpacity
           style={styles.backButton}
@@ -68,170 +86,130 @@ const SupplierDetailScreen = ({ route, navigation }) => {
         >
           <Ionicons name="arrow-back-outline" size={24} color="#1C2A3A" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Chi tiết nhà cung cấp</Text>
+        <View style={{marginLeft: 16, flex: 1}}>
+            <Text style={styles.headerTitle} numberOfLines={1}>Sản phẩm</Text>
+            <Text style={styles.headerSubtitle} numberOfLines={1}>Của: {supplierName}</Text>
+        </View>
       </View>
 
-      <ScrollView contentContainerStyle={{ padding: 16 }}>
-        <View style={styles.center}>
-          <Image
-            source={{
-              uri:
-                supplier.avatarUrl ||
-                "https://cdn-icons-png.flaticon.com/512/147/147144.png",
-            }}
-            style={styles.avatar}
-          />
-          <Text style={styles.name}>{supplier.name}</Text>
-          <Text style={styles.fullName}>{supplier.fullName}</Text>
+      {/* Nội dung chính */}
+      {loading ? (
+        <View style={styles.centerContainer}>
+          <ActivityIndicator size="large" color="#003d66" />
         </View>
-
-        <View style={styles.infoCard}>
-          <View style={styles.infoRow}>
-            <Ionicons name="mail-outline" size={20} color="#003d66" />
-            <Text style={styles.infoText}>{supplier.email || "Không có email"}</Text>
-          </View>
-
-          <View style={styles.infoRow}>
-            <Ionicons name="call-outline" size={20} color="#003d66" />
-            <Text style={styles.infoText}>{supplier.phoneNumber || "Không có số điện thoại"}</Text>
-          </View>
-
-          <View style={styles.infoRow}>
-            <Ionicons name="location-outline" size={20} color="#003d66" />
-            <Text style={styles.infoText}>
-              {supplier.address || "Không có địa chỉ"}
-            </Text>
-          </View>
-
-          <View style={styles.infoRow}>
-            <Ionicons name="calendar-outline" size={20} color="#003d66" />
-            <Text style={styles.infoText}>
-              Đăng ký:{" "}
-              {new Date(supplier.createdDate).toLocaleDateString("vi-VN")}
-            </Text>
-          </View>
-        </View>
-
-        <View style={styles.actionContainer}>
-          <TouchableOpacity
-            style={[styles.actionButton, { backgroundColor: "#1E88E5" }]}
-            onPress={() => handleCall(supplier.phoneNumber)}
-          >
-            <Ionicons name="call" size={20} color="#fff" />
-            <Text style={styles.actionText}>Gọi điện</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[styles.actionButton, { backgroundColor: "#43A047" }]}
-            onPress={() => handleEmail(supplier.email)}
-          >
-            <Ionicons name="mail" size={20} color="#fff" />
-            <Text style={styles.actionText}>Gửi email</Text>
-          </TouchableOpacity>
-        </View>
-      </ScrollView>
+      ) : (
+        <FlatList
+          data={products}
+          renderItem={renderProductItem}
+          keyExtractor={(item) => item.id}
+          contentContainerStyle={styles.listContainer}
+          showsVerticalScrollIndicator={false}
+          ListEmptyComponent={
+            <View style={styles.centerContainer}>
+              <Ionicons name="cube-outline" size={60} color="#D1D5DB" />
+              <Text style={styles.emptyText}>Chưa có sản phẩm nào</Text>
+            </View>
+          }
+        />
+      )}
     </SafeAreaView>
   );
 };
 
-export default SupplierDetailScreen;
+export default SupplierProductsScreen;
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#F5F9FC",
   },
-  loadingContainer: {
+  centerContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
+    marginTop: 50,
   },
+  // Header Styles
   headerContainer: {
     flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: 16,
     paddingVertical: 12,
+    backgroundColor: "#fff",
+    borderBottomWidth: 1,
+    borderBottomColor: "#E9EFF5",
   },
   backButton: {
-    backgroundColor: "#FFFFFF",
     padding: 8,
-    borderRadius: 20,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 3,
   },
   headerTitle: {
-    fontSize: 22,
-    fontWeight: "700",
-    color: "#1C2A3A",
-    marginLeft: 16,
-  },
-  center: {
-    alignItems: "center",
-    marginVertical: 20,
-  },
-  avatar: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    borderWidth: 2,
-    borderColor: "#E0E6ED",
-    marginBottom: 12,
-  },
-  name: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: "700",
     color: "#1C2A3A",
   },
-  fullName: {
-    fontSize: 16,
+  headerSubtitle: {
+    fontSize: 14,
     color: "#5A6A7D",
-    marginTop: 4,
   },
-  infoCard: {
-    backgroundColor: "#fff",
-    borderRadius: 16,
+  // List Styles
+  listContainer: {
     padding: 16,
-    shadowColor: "#003d66",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.08,
-    shadowRadius: 10,
-    elevation: 4,
-    borderWidth: 1,
-    borderColor: "#E9EFF5",
   },
-  infoRow: {
+  // Product Card Styles
+  productCard: {
     flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 10,
-  },
-  infoText: {
-    fontSize: 15,
-    color: "#1C2A3A",
-    marginLeft: 10,
-    flexShrink: 1,
-  },
-  actionContainer: {
-    flexDirection: "row",
-    justifyContent: "space-around",
-    marginTop: 24,
-  },
-  actionButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    borderRadius: 30,
+    backgroundColor: "#fff",
+    borderRadius: 12,
+    marginBottom: 12,
+    padding: 12,
+    alignItems: 'center',
+    // Shadow cho đẹp
     shadowColor: "#000",
-    shadowOpacity: 0.1,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
     shadowRadius: 4,
-    elevation: 3,
+    elevation: 2,
+    borderWidth: 1,
+    borderColor: "transparent",
   },
-  actionText: {
-    color: "#fff",
+  productImage: {
+    width: 80,
+    height: 80,
+    borderRadius: 8,
+    backgroundColor: "#F1F3F4",
+  },
+  productInfo: {
+    flex: 1,
+    marginLeft: 12,
+    marginRight: 8,
+    justifyContent: "center",
+  },
+  categoryBadge: {
+    fontSize: 12,
+    color: "#1967D2", // Màu xanh google
     fontWeight: "600",
-    marginLeft: 8,
+    marginBottom: 4,
+    textTransform: 'uppercase'
+  },
+  productName: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#1C2A3A",
+    marginBottom: 4,
+  },
+  productDesc: {
+    fontSize: 13,
+    color: "#5F6368",
+    marginBottom: 4,
+  },
+  dateText: {
+      fontSize: 11,
+      color: "#9AA0A6",
+      fontStyle: 'italic'
+  },
+  emptyText: {
+    marginTop: 10,
+    fontSize: 16,
+    color: "#9AA0A6",
   },
 });

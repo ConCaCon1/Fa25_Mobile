@@ -14,7 +14,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { apiGet, apiPost } from "../../ultis/api"; 
 
 const SelectShipScreen = ({ route, navigation }) => {
-  const { productId, variantId, variantName, quantity } = route.params; // ✔ THÊM quantity
+  const { productId, variantId, variantName, quantity } = route.params; 
 
   const [shipList, setShipList] = useState([]);
   const [filteredShipList, setFilteredShipList] = useState([]);
@@ -150,7 +150,7 @@ const SelectShipScreen = ({ route, navigation }) => {
         <View style={styles.titleContainer}>
           <Text style={styles.headerTitle}>Chọn Tàu Đặt Hàng</Text>
           <Text style={styles.headerSubtitle} numberOfLines={1}>
-            {quantity} × {String(variantName)} {/* ✔ Hiển thị số lượng */}
+            {quantity} × {String(variantName)} 
           </Text>
         </View>
       </View>
@@ -202,7 +202,6 @@ const SelectShipScreen = ({ route, navigation }) => {
   );
 };
 
-// Styles giữ nguyên…
 const styles = StyleSheet.create({
   container: { 
     flex: 1, 

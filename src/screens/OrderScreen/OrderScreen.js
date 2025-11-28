@@ -23,19 +23,18 @@ const formatCurrency = (amount) => {
 };
 
 const getStatusStyle = (status) => {
-  switch (status) {
+switch (status) {
     case "Pending":
-      return { bg: "#FEF7E0", text: "#F9AB00", label: "Chờ xử lý" };
-
+      return { bg: "#FEF7E0", text: "#F9AB00", label: "Chờ xử lý", icon: "time" };
     case "Approved":
-      return { bg: "#E6F4EA", text: "#1E8E3E", label: "Đã duyệt" };
-
+      return { bg: "#E6F4EA", text: "#1E8E3E", label: "Đã duyệt", icon: "checkmark-circle" };
     case "Rejected":
-      return { bg: "#FCE8E6", text: "#D93025", label: "Bị từ chối" };
-
+      return { bg: "#FCE8E6", text: "#D93025", label: "Bị từ chối", icon: "close-circle" };
+    case "Delivered":
+      return { bg: "#E8F0FE", text: "#1967D2", label: "Đã giao", icon: "cube" }; 
     default:
-      return { bg: "#F1F3F4", text: "#5F6368", label: status };
-  }
+      return { bg: "#F1F3F4", text: "#5F6368", label: status, icon: "help-circle" };
+}
 };
 
 const OrderScreen = ({ navigation }) => {

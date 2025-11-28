@@ -16,7 +16,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
-import { apiGet, apiPost } from "../../ultis/api";
+import { apiGet, apiPost, apiPut } from "../../ultis/api";
 
 const formatCurrency = (amount) => {
   return new Intl.NumberFormat("vi-VN", {
@@ -26,19 +26,18 @@ const formatCurrency = (amount) => {
 };
 
 const getStatusConfig = (status) => {
-  switch (status) {
+switch (status) {
     case "Pending":
-      return { bg: "#FEF7E0", text: "#F9AB00", label: "Chờ xử lý" };
-
+      return { bg: "#FEF7E0", text: "#F9AB00", label: "Chờ xử lý", icon: "time" };
     case "Approved":
-      return { bg: "#E6F4EA", text: "#1E8E3E", label: "Đã duyệt" };
-
+      return { bg: "#E6F4EA", text: "#1E8E3E", label: "Đã duyệt", icon: "checkmark-circle" };
     case "Rejected":
-      return { bg: "#FCE8E6", text: "#D93025", label: "Bị từ chối" };
-
+      return { bg: "#FCE8E6", text: "#D93025", label: "Bị từ chối", icon: "close-circle" };
+    case "Delivered":
+      return { bg: "#E8F0FE", text: "#1967D2", label: "Đã giao", icon: "cube" }; 
     default:
-      return { bg: "#F1F3F4", text: "#5F6368", label: status };
-  }
+      return { bg: "#F1F3F4", text: "#5F6368", label: status, icon: "help-circle" };
+}
 };
 
 const InfoRow = ({ icon, label, value, isLast }) => (
@@ -62,6 +61,10 @@ const OrderDetailScreen = ({ route, navigation }) => {
   const [address, setAddress] = useState("");
   const [payLoading, setPayLoading] = useState(false);
 
+  const [isEditModalVisible, setEditModalVisible] = useState(false);
+  const [newQuantity, setNewQuantity] = useState(""); 
+  const [updateLoading, setUpdateLoading] = useState(false);
+
   const fetchOrderDetail = async () => {
     try {
       const res = await apiGet(`/orders/${id}`);
@@ -82,24 +85,14 @@ const OrderDetailScreen = ({ route, navigation }) => {
       Alert.alert("Thông báo", "Vui lòng nhập địa chỉ giao hàng để tiếp tục.");
       return;
     }
-
     try {
       setPayLoading(true);
-
-      const body = {
-        id: order.id,
-        type: "Supplier",
-        address: address.trim(),
-      };
-
       const res = await apiPost("/payments", {
         id,
         type: "Supplier",
-        address,
+        address: address.trim(),
       });
-
       navigation.navigate("CheckoutScreen", { data: res.data });
-
       setModalVisible(false);
       setAddress("");
     } catch (error) {
@@ -107,6 +100,39 @@ const OrderDetailScreen = ({ route, navigation }) => {
       console.log("Payment error:", error);
     } finally {
       setPayLoading(false);
+    }
+  };
+
+  const handleOpenEdit = () => {
+ 
+    setNewQuantity(order.quantity ? order.quantity.toString() : ""); 
+    setEditModalVisible(true);
+  };
+
+  const handleUpdateOrder = async () => {
+    if (!newQuantity || isNaN(newQuantity) || Number(newQuantity) <= 0) {
+        Alert.alert("Lỗi", "Vui lòng nhập số lượng hợp lệ (lớn hơn 0).");
+        return;
+    }
+
+    try {
+      setUpdateLoading(true);
+
+      const payload = {
+        id: order.id, 
+        quantity: Number(newQuantity) 
+      };
+
+      await apiPut(`/orders/${id}`, payload);
+
+      Alert.alert("Thành công", "Đơn hàng đã được cập nhật số lượng.");
+      setEditModalVisible(false);
+      fetchOrderDetail(); 
+    } catch (error) {
+      console.log("Update error:", error);
+      Alert.alert("Lỗi", "Cập nhật thất bại. Vui lòng thử lại.");
+    } finally {
+      setUpdateLoading(false);
     }
   };
 
@@ -152,7 +178,7 @@ const OrderDetailScreen = ({ route, navigation }) => {
               <Text style={styles.orderIdText}>#{order.id.toString().slice(-6)}</Text>
             </View>
             <View style={[styles.statusBadge, { backgroundColor: statusConfig.bg }]}>
-              <Ionicons name={statusConfig.icon} size={16} color={statusConfig.text} style={{ marginRight: 6 }} />
+              <Ionicons name={statusConfig.icon || "ellipse"} size={16} color={statusConfig.text} style={{ marginRight: 6 }} />
               <Text style={[styles.statusText, { color: statusConfig.text }]}>
                 {statusConfig.label}
               </Text>
@@ -188,6 +214,21 @@ const OrderDetailScreen = ({ route, navigation }) => {
             </View>
           </View>
         </View>
+        
+        {(order.orderItems || order.orderDetails) && (
+          <>
+            <Text style={styles.sectionHeader}>CHI TIẾT SẢN PHẨM</Text>
+            <View style={styles.itemsContainer}>
+              {(order.orderItems || order.orderDetails).map((item, index) => (
+                <View key={index} style={styles.itemRowReadOnly}>
+                  <Text style={styles.itemNameRO}>{item.productName || "Sản phẩm"}</Text>
+                  <Text style={styles.itemQtyRO}>x{item.quantity}</Text>
+                  <Text style={styles.itemPriceRO}>{formatCurrency(item.price || 0)}</Text>
+                </View>
+              ))}
+            </View>
+          </>
+        )}
 
         <TouchableOpacity style={styles.supportBtn}>
             <Ionicons name="chatbubbles-outline" size={20} color="#666" />
@@ -200,11 +241,20 @@ const OrderDetailScreen = ({ route, navigation }) => {
       {order.status === "Pending" && (
         <View style={styles.bottomActionContainer}>
           <TouchableOpacity 
+            style={styles.editButton} 
+            activeOpacity={0.8}
+            onPress={handleOpenEdit}
+          >
+            <Ionicons name="create-outline" size={20} color="#003d66" />
+            <Text style={styles.editButtonText}>Sửa số lượng</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity 
             style={styles.payButton} 
             activeOpacity={0.8}
             onPress={() => setModalVisible(true)}
           >
-            <Text style={styles.payButtonText}>THANH TOÁN NGAY</Text>
+            <Text style={styles.payButtonText}>Thanh toán</Text>
             <Ionicons name="arrow-forward" size={20} color="#fff" />
           </TouchableOpacity>
         </View>
@@ -231,7 +281,7 @@ const OrderDetailScreen = ({ route, navigation }) => {
 
                 <Text style={styles.inputLabel}>Địa chỉ giao hàng</Text>
                 <TextInput
-                  placeholder="Nhập số nhà, tên đường, phường/xã..."
+                  placeholder="Nhập số nhà, tên đường..."
                   style={styles.inputField}
                   value={address}
                   onChangeText={setAddress}
@@ -257,6 +307,46 @@ const OrderDetailScreen = ({ route, navigation }) => {
         </TouchableWithoutFeedback>
       </Modal>
 
+      <Modal visible={isEditModalVisible} transparent animationType="slide">
+        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { height: 'auto' }]}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Cập nhật đơn hàng</Text>
+              <TouchableOpacity onPress={() => setEditModalVisible(false)}>
+                <Ionicons name="close" size={24} color="#888" />
+              </TouchableOpacity>
+            </View>
+            
+            <Text style={styles.modalDesc}>
+              Nhập số lượng mới cho đơn hàng #{order.id.toString().slice(-6)}.
+            </Text>
+
+            <Text style={styles.inputLabel}>Số lượng (Quantity)</Text>
+            <TextInput
+                  placeholder="Nhập số lượng..."
+                  style={[styles.inputField, { height: 50, marginBottom: 30 }]} 
+                  value={newQuantity}
+                  onChangeText={(text) => setNewQuantity(text.replace(/[^0-9]/g, ''))} 
+                  keyboardType="numeric"
+            />
+
+            <TouchableOpacity 
+              style={[styles.confirmBtn, updateLoading && styles.disabledBtn]} 
+              onPress={handleUpdateOrder}
+              disabled={updateLoading}
+            >
+              {updateLoading ? (
+                <ActivityIndicator color="#fff" />
+              ) : (
+                <Text style={styles.confirmText}>Lưu Thay Đổi</Text>
+              )}
+            </TouchableOpacity>
+          </View>
+        </View>
+        </TouchableWithoutFeedback>
+      </Modal>
+
     </SafeAreaView>
   );
 };
@@ -271,14 +361,9 @@ const styles = StyleSheet.create({
   backButtonTextOutline: { color: '#003d66', fontWeight: '600' },
   
   header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    backgroundColor: "#fff",
-    elevation: 2,
-    shadowColor: "#000", shadowOpacity: 0.05, shadowOffset: { width: 0, height: 2 },
+    flexDirection: "row", justifyContent: "space-between", alignItems: 'center',
+    paddingHorizontal: 16, paddingVertical: 12, backgroundColor: "#fff",
+    elevation: 2, shadowColor: "#000", shadowOpacity: 0.05, shadowOffset: { width: 0, height: 2 },
   },
   headerBtn: { padding: 8 },
   headerTitle: { fontSize: 18, fontWeight: "800", color: "#003d66", letterSpacing: 0.5 },
@@ -286,28 +371,14 @@ const styles = StyleSheet.create({
   scrollContent: { padding: 20 },
   
   mainCard: {
-    backgroundColor: "#fff",
-    borderRadius: 16,
-    padding: 20,
-    marginBottom: 24,
-    shadowColor: "#003d66",
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.1,
-    shadowRadius: 16,
-    elevation: 4,
-    borderLeftWidth: 4,
-    borderLeftColor: '#003d66', 
+    backgroundColor: "#fff", borderRadius: 16, padding: 20, marginBottom: 24,
+    shadowColor: "#003d66", shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.1, shadowRadius: 16, elevation: 4,
+    borderLeftWidth: 4, borderLeftColor: '#003d66', 
   },
   mainCardHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: 'flex-start' },
   labelSmall: { fontSize: 12, color: "#8898AA", fontWeight: "700", marginBottom: 4 },
   orderIdText: { fontSize: 26, fontWeight: "800", color: "#32325D" },
-  statusBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 20,
-  },
+  statusBadge: { flexDirection: "row", alignItems: "center", paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20 },
   statusText: { fontSize: 13, fontWeight: "700" },
   dottedLine: { height: 1, backgroundColor: "#E9ECEF", marginVertical: 16, borderStyle: 'dashed', borderWidth: 1, borderColor: '#E9ECEF', borderRadius: 1 },
   mainCardFooter: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap' },
@@ -316,45 +387,24 @@ const styles = StyleSheet.create({
 
   sectionHeader: { fontSize: 14, fontWeight: "700", color: "#8898AA", marginBottom: 12, marginLeft: 4, letterSpacing: 0.5 },
   
-  infoCard: {
-    backgroundColor: "#fff",
-    borderRadius: 14,
-    padding: 16,
-    marginBottom: 24,
-    borderWidth: 1,
-    borderColor: '#EFF2F7'
-  },
+  infoCard: { backgroundColor: "#fff", borderRadius: 14, padding: 16, marginBottom: 24, borderWidth: 1, borderColor: '#EFF2F7' },
   infoRow: { flexDirection: "row", paddingVertical: 12, alignItems: 'center' },
   infoRowBorder: { borderBottomWidth: 1, borderBottomColor: "#F1F3F4" },
-  infoIconContainer: {
-    width: 42, height: 42,
-    borderRadius: 12,
-    backgroundColor: "#E6F0F9", 
-    justifyContent: "center", alignItems: "center",
-    marginRight: 16,
-  },
+  infoIconContainer: { width: 42, height: 42, borderRadius: 12, backgroundColor: "#E6F0F9", justifyContent: "center", alignItems: "center", marginRight: 16 },
   infoContent: { flex: 1 },
   infoLabel: { fontSize: 13, color: "#8898AA", marginBottom: 2 },
   infoValue: { fontSize: 16, fontWeight: "600", color: "#32325D" },
 
-  paymentCard: {
-    backgroundColor: "#003d66", 
-    borderRadius: 16,
-    padding: 20,
-    marginBottom: 20,
-    shadowColor: "#003d66", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 5,
-  },
+  paymentCard: { backgroundColor: "#003d66", borderRadius: 16, padding: 20, marginBottom: 20, shadowColor: "#003d66", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 5 },
   paymentRow: { flexDirection: 'row', alignItems: 'center' },
-  walletIcon: { 
-    width: 48, height: 48, borderRadius: 24, backgroundColor: "rgba(255,255,255,0.2)", 
-    justifyContent: 'center', alignItems: 'center', marginRight: 16 
-  },
+  walletIcon: { width: 48, height: 48, borderRadius: 24, backgroundColor: "rgba(255,255,255,0.2)", justifyContent: 'center', alignItems: 'center', marginRight: 16 },
   paymentLabel: { color: "rgba(255,255,255,0.8)", fontSize: 14, marginBottom: 4 },
   totalAmount: { color: "#fff", fontSize: 22, fontWeight: "800" },
 
   supportBtn: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', padding: 12 },
   supportText: { marginLeft: 8, color: '#666', fontWeight: '500' },
 
+  // --- STYLES MỚI CHO BOTTOM BAR ---
   bottomActionContainer: {
     position: 'absolute', bottom: 0, left: 0, right: 0,
     backgroundColor: '#fff',
@@ -362,8 +412,22 @@ const styles = StyleSheet.create({
     paddingBottom: Platform.OS === 'ios' ? 24 : 16,
     borderTopWidth: 1, borderTopColor: '#EFF2F7',
     elevation: 10,
+    flexDirection: 'row', 
+    alignItems: 'center',
+    gap: 12, 
   },
+  
+  editButton: {
+    flex: 1,
+    backgroundColor: "#fff", 
+    flexDirection: 'row', justifyContent: 'center', alignItems: 'center',
+    paddingVertical: 16, borderRadius: 12,
+    borderWidth: 1, borderColor: "#003d66", 
+  },
+  editButtonText: { color: "#003d66", fontSize: 16, fontWeight: "700", marginLeft: 8 },
+
   payButton: {
+    flex: 1,
     backgroundColor: "#003d66",
     flexDirection: 'row', justifyContent: 'center', alignItems: 'center',
     paddingVertical: 16, borderRadius: 12,
@@ -371,18 +435,10 @@ const styles = StyleSheet.create({
   },
   payButtonText: { color: "#fff", fontSize: 16, fontWeight: "700", marginRight: 8 },
 
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.6)",
-    justifyContent: "center",
-    alignItems: "center",
-  },
+  modalOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.6)", justifyContent: "center", alignItems: "center" },
   keyboardView: { width: '100%', alignItems: 'center' },
   modalContent: {
-    width: '85%',
-    backgroundColor: "#fff",
-    borderRadius: 20,
-    padding: 24,
+    width: '90%', backgroundColor: "#fff", borderRadius: 20, padding: 24,
     shadowColor: "#000", shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.25, shadowRadius: 10, elevation: 10,
   },
   modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
@@ -390,21 +446,17 @@ const styles = StyleSheet.create({
   modalDesc: { fontSize: 14, color: "#525F7F", marginBottom: 20, lineHeight: 20 },
   inputLabel: { fontSize: 13, fontWeight: "600", color: "#32325D", marginBottom: 8 },
   inputField: {
-    backgroundColor: "#F4F5F7",
-    borderRadius: 12,
-    padding: 14,
-    fontSize: 16,
-    color: "#32325D",
-    borderWidth: 1, borderColor: "transparent",
-    marginBottom: 24,
-    height: 80, 
+    backgroundColor: "#F4F5F7", borderRadius: 12, padding: 14, fontSize: 16,
+    color: "#32325D", borderWidth: 1, borderColor: "transparent", marginBottom: 24, height: 80,
   },
-  confirmBtn: {
-    backgroundColor: "#003d66",
-    paddingVertical: 14,
-    borderRadius: 12,
-    alignItems: 'center',
-  },
+  confirmBtn: { backgroundColor: "#003d66", paddingVertical: 14, borderRadius: 12, alignItems: 'center', width: '100%' },
   disabledBtn: { opacity: 0.7 },
   confirmText: { color: "#fff", fontSize: 16, fontWeight: "700" },
-});
+
+  // Giữ lại styles cho danh sách sản phẩm (Read-only)
+  itemsContainer: { backgroundColor: '#fff', borderRadius: 14, padding: 16, borderWidth: 1, borderColor: '#EFF2F7', marginBottom: 24 },
+  itemRowReadOnly: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: '#F5F5F5' },
+  itemNameRO: { flex: 1, fontSize: 14, color: '#32325D', fontWeight: '500' },
+  itemQtyRO: { width: 40, textAlign: 'center', fontSize: 14, color: '#525F7F' },
+  itemPriceRO: { width: 100, textAlign: 'right', fontSize: 14, fontWeight: '600', color: '#32325D' },
+}); 
