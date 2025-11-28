@@ -10,8 +10,8 @@ import {
   Linking,
   Platform,
   StatusBar,
-  Modal, // Thêm Modal
-  TouchableWithoutFeedback, // Thêm để xử lý đóng modal khi bấm ra ngoài
+  Modal,
+  TouchableWithoutFeedback,
 } from "react-native";
 import { Ionicons, Feather, MaterialIcons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -25,7 +25,7 @@ const DetailItem = ({ iconName, label, value }) => (
     </View>
     <View style={styles.detailItemTextContainer}>
       <Text style={styles.detailItemLabel}>{label}</Text>
-      <Text style={styles.detailItemValue}>{value}</Text>
+      <Text style={styles.detailItemValue}>{value || "Chưa cập nhật"}</Text>
     </View>
   </View>
 );
@@ -38,23 +38,24 @@ const ServiceItem = ({ service }) => (
     <View style={styles.serviceTextContent}>
       <Text style={styles.serviceName}>{service.typeService}</Text>
       <Text style={styles.servicePrice}>
-        Giá: {service.price ? service.price.toLocaleString() : "N/A"} VND
+        {service.price ? service.price.toLocaleString() : "Liên hệ"} VND
       </Text>
     </View>
   </View>
 );
 
 const BoatyardDetailsScreen = ({ route, navigation }) => {
-  const { id } = route.params;
+  const { id } = route.params || {};
   const [boatyard, setBoatyard] = useState(null);
   const [loading, setLoading] = useState(true);
   const [services, setServices] = useState([]);
-  
   const [modalVisible, setModalVisible] = useState(false);
 
   useEffect(() => {
-    fetchBoatyardDetail();
-    fetchBoatyardServices();
+    if (id) {
+        fetchBoatyardDetail();
+        fetchBoatyardServices();
+    }
   }, [id]);
 
   const fetchBoatyardDetail = async () => {
@@ -70,9 +71,7 @@ const BoatyardDetailsScreen = ({ route, navigation }) => {
 
   const fetchBoatyardServices = async () => {
     try {
-      const json = await apiGet(
-        `/boatyards/${id}/boatyard-services?page=1&size=30`
-      );
+      const json = await apiGet(`/boatyards/${id}/boatyard-services?page=1&size=30`);
       if (json?.data?.items) setServices(json.data.items);
     } catch (error) {
       console.log("❌ Error fetching boatyard services:", error);
@@ -87,18 +86,25 @@ const BoatyardDetailsScreen = ({ route, navigation }) => {
     if (boatyard?.email) Linking.openURL(`mailto:${boatyard.email}`);
   };
 
-  const handleOpenBookingModal = () => {
-    setModalVisible(true);
-  };
-
   const handleSelectService = (service) => {
-    setModalVisible(false); 
+    setModalVisible(false);
     navigation.navigate("SelectDockSlotScreen", {
       boatyardId: boatyard.id,
       boatyardName: boatyard.name,
-      selectedService: service, 
+      selectedService: service,
     });
   };
+
+  if (!id) {
+     return (
+        <SafeAreaView style={styles.loader}>
+            <Text>Lỗi: Không tìm thấy ID xưởng</Text>
+            <TouchableOpacity onPress={() => navigation.goBack()} style={{marginTop: 20}}>
+                <Text style={{color: '#007BFF'}}>Quay lại</Text>
+            </TouchableOpacity>
+        </SafeAreaView>
+     )
+  }
 
   if (loading) {
     return (
@@ -117,23 +123,19 @@ const BoatyardDetailsScreen = ({ route, navigation }) => {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="light-content" />
+    <View style={styles.container}>
+      <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
+      
       <View style={styles.header}>
-        <TouchableOpacity
-          onPress={() => navigation.goBack()}
-          style={styles.backBtn}
-        >
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
           <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
         </TouchableOpacity>
       </View>
 
-      <ScrollView showsVerticalScrollIndicator={false}>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{paddingBottom: 100}}>
         <Image
           source={{
-            uri:
-              boatyard.avatarUrl ||
-              "https://images.unsplash.com/photo-1556912173-356d73534346?q=80&w=2070&auto=format&fit=crop",
+            uri: boatyard.avatarUrl || "https://png.pngtree.com/png-vector/20250728/ourlarge/pngtree-vintage-trawler-fishing-boat-vector-icon-element-png-image_16880913.webp",
           }}
           style={styles.bannerImage}
         />
@@ -143,43 +145,29 @@ const BoatyardDetailsScreen = ({ route, navigation }) => {
             <Text style={styles.boatyardName}>{boatyard.name}</Text>
             <View style={styles.ownerSection}>
               <Feather name="user" size={16} color="#607D8B" />
-              <Text style={styles.boatyardOwner}>
-                Chủ xưởng: {boatyard.fullName}
-              </Text>
+              <Text style={styles.boatyardOwner}>Chủ xưởng: {boatyard.fullName || "---"}</Text>
             </View>
           </View>
 
           <View style={styles.actionButtonsContainer}>
-            <TouchableOpacity
-              style={styles.actionButton}
-              onPress={handlePressCall}
-              activeOpacity={0.8}
-            >
+            <TouchableOpacity style={styles.actionButton} onPress={handlePressCall}>
               <Feather name="phone-call" size={18} color="#FFFFFF" />
               <Text style={styles.actionButtonText}>Gọi điện</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity
-              style={[styles.actionButton, styles.emailButton]}
-              onPress={handlePressEmail}
-              activeOpacity={0.8}
-            >
+            <TouchableOpacity style={[styles.actionButton, styles.emailButton]} onPress={handlePressEmail}>
               <Feather name="mail" size={18} color="#FFFFFF" />
-              <Text style={styles.actionButtonText}>Gửi Email</Text>
+              <Text style={styles.actionButtonText}>Email</Text>
             </TouchableOpacity>
           </View>
 
           <View style={styles.detailsCard}>
             <Text style={styles.sectionTitle}>Thông tin chi tiết</Text>
-            <DetailItem
-              iconName="map-pin"
-              label="Địa chỉ"
-              value={boatyard.address}
-            />
+            <DetailItem iconName="map-pin" label="Địa chỉ" value={boatyard.address} />
             <DetailItem
               iconName="clock"
               label="Ngày tham gia"
-              value={new Date(boatyard.createdDate).toLocaleDateString("vi-VN")}
+              value={boatyard.createdDate ? new Date(boatyard.createdDate).toLocaleDateString("vi-VN") : null}
             />
           </View>
 
@@ -188,9 +176,7 @@ const BoatyardDetailsScreen = ({ route, navigation }) => {
             {services.length === 0 ? (
               <View style={styles.noServiceContainer}>
                 <MaterialIcons name="info-outline" size={24} color="#607D8B" />
-                <Text style={styles.noServiceText}>
-                  Xưởng này chưa cung cấp dịch vụ nào.
-                </Text>
+                <Text style={styles.noServiceText}>Chưa có dịch vụ nào.</Text>
               </View>
             ) : (
               <View style={styles.servicesGrid}>
@@ -203,7 +189,7 @@ const BoatyardDetailsScreen = ({ route, navigation }) => {
         </View>
 
         <View style={styles.mapCard}>
-          <Text style={styles.sectionTitle}>🗺️ Vị trí trên bản đồ</Text>
+          <Text style={styles.sectionTitle}>🗺️ Vị trí</Text>
           {boatyard.latitude && boatyard.longitude ? (
             <View style={styles.mapWrapper}>
               <GoongMapView
@@ -215,9 +201,7 @@ const BoatyardDetailsScreen = ({ route, navigation }) => {
               />
             </View>
           ) : (
-            <Text style={{ color: "#607D8B", textAlign: "center" }}>
-              Không có thông tin vị trí
-            </Text>
+            <Text style={{ color: "#607D8B", textAlign: "center", fontStyle: 'italic' }}>Chưa cập nhật tọa độ bản đồ</Text>
           )}
         </View>
       </ScrollView>
@@ -226,7 +210,7 @@ const BoatyardDetailsScreen = ({ route, navigation }) => {
         <View style={styles.bookNowFixedContainer}>
           <TouchableOpacity
             style={styles.bookNowButton}
-            onPress={handleOpenBookingModal} 
+            onPress={() => setModalVisible(true)}
             activeOpacity={0.9}
           >
             <Ionicons name="calendar-outline" size={22} color="#FFFFFF" />
@@ -246,16 +230,13 @@ const BoatyardDetailsScreen = ({ route, navigation }) => {
             <TouchableWithoutFeedback>
               <View style={styles.modalContent}>
                 <View style={styles.modalHeader}>
-                  <Text style={styles.modalTitle}>Chọn dịch vụ bạn cần</Text>
+                  <Text style={styles.modalTitle}>Chọn dịch vụ</Text>
                   <TouchableOpacity onPress={() => setModalVisible(false)}>
                     <Ionicons name="close" size={24} color="#333" />
                   </TouchableOpacity>
                 </View>
 
-                <ScrollView
-                  style={{ maxHeight: 300 }} 
-                  showsVerticalScrollIndicator={false}
-                >
+                <ScrollView style={{ maxHeight: 400 }} showsVerticalScrollIndicator={false}>
                   {services.map((service) => (
                     <TouchableOpacity
                       key={service.id}
@@ -263,25 +244,15 @@ const BoatyardDetailsScreen = ({ route, navigation }) => {
                       onPress={() => handleSelectService(service)}
                     >
                       <View style={styles.modalItemIcon}>
-                        <MaterialIcons
-                          name="miscellaneous-services"
-                          size={20}
-                          color="#007BFF"
-                        />
+                        <MaterialIcons name="miscellaneous-services" size={20} color="#007BFF" />
                       </View>
                       <View style={{ flex: 1 }}>
-                        <Text style={styles.modalServiceName}>
-                          {service.typeService}
-                        </Text>
+                        <Text style={styles.modalServiceName}>{service.typeService}</Text>
                         <Text style={styles.modalServicePrice}>
-                          {service.price ? service.price.toLocaleString() : "N/A"} VND
+                          {service.price ? service.price.toLocaleString() : "Liên hệ"} VND
                         </Text>
                       </View>
-                      <Ionicons
-                        name="chevron-forward"
-                        size={20}
-                        color="#C7C7CC"
-                      />
+                      <Ionicons name="chevron-forward" size={20} color="#C7C7CC" />
                     </TouchableOpacity>
                   ))}
                 </ScrollView>
@@ -290,309 +261,61 @@ const BoatyardDetailsScreen = ({ route, navigation }) => {
           </View>
         </TouchableWithoutFeedback>
       </Modal>
-    </SafeAreaView>
+    </View>
   );
 };
 
 export default BoatyardDetailsScreen;
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#F4F7FC",
-  },
-  loader: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "#F4F7FC",
-  },
-  header: {
-    position: "absolute",
-    top: Platform.OS === "android" ? StatusBar.currentHeight + 10 : 50,
-    left: 16,
-    zIndex: 10,
-  },
-  backBtn: {
-    backgroundColor: "rgba(0, 0, 0, 0.4)",
-    padding: 8,
-    borderRadius: 50,
-  },
-  bannerImage: {
-    width: "100%",
-    height: 250,
-  },
-  contentContainer: {
-    paddingHorizontal: 16,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    marginTop: -24,
-    backgroundColor: "#F4F7FC",
-    paddingBottom: 20,
-  },
-  titleSection: {
-    backgroundColor: "#FFFFFF",
-    padding: 20,
-    borderRadius: 16,
-    shadowColor: "#9FB1C8",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 10,
-    elevation: 5,
-    marginBottom: 20,
-  },
-  boatyardName: {
-    fontSize: 26,
-    fontWeight: "bold",
-    color: "#1A2533",
-    marginBottom: 8,
-  },
-  ownerSection: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  boatyardOwner: {
-    fontSize: 15,
-    color: "#607D8B",
-    marginLeft: 8,
-  },
-  actionButtonsContainer: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    gap: 12,
-    marginBottom: 20,
-  },
-  actionButton: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "#007BFF",
-    paddingVertical: 14,
-    borderRadius: 12,
-    shadowColor: "#007BFF",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 5,
-    elevation: 6,
-  },
-  emailButton: {
-    backgroundColor: "#17A2B8",
-    shadowColor: "#17A2B8",
-  },
-  actionButtonText: {
-    color: "#FFFFFF",
-    fontWeight: "bold",
-    fontSize: 16,
-    marginLeft: 8,
-  },
-  detailsCard: {
-    backgroundColor: "#FFFFFF",
-    borderRadius: 16,
-    padding: 20,
-    marginTop: 0,
-    marginBottom: 20,
-    shadowColor: "#9FB1C8",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 10,
-    elevation: 5,
-  },
-  sectionTitle: {
-    fontWeight: "bold",
-    fontSize: 20,
-    color: "#1A2533",
-    marginBottom: 16,
-  },
-  detailItemContainer: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    marginBottom: 16,
-  },
-  detailItemIconBg: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: "#E3F2FD",
-    justifyContent: "center",
-    alignItems: "center",
-    marginRight: 16,
-  },
-  detailItemTextContainer: {
-    flex: 1,
-  },
-  detailItemLabel: {
-    fontSize: 13,
-    color: "#607D8B",
-    marginBottom: 4,
-  },
-  detailItemValue: {
-    fontSize: 15,
-    color: "#263238",
-    lineHeight: 22,
-  },
-  noServiceContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: 15,
-    backgroundColor: "#F7F9FC",
-    borderRadius: 10,
-  },
-  noServiceText: {
-    marginLeft: 10,
-    fontSize: 14,
-    color: "#607D8B",
-  },
-  servicesGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    justifyContent: "space-between",
-    gap: 12,
-  },
-  serviceCard: {
-    width: "48%",
-    backgroundColor: "#FFFFFF",
-    borderRadius: 12,
-    padding: 12,
-    flexDirection: "row",
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: "#EFEFEF",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  serviceIconContainer: {
-    marginRight: 10,
-    backgroundColor: "#E6F7EB",
-    padding: 8,
-    borderRadius: 8,
-  },
-  serviceTextContent: {
-    flex: 1,
-  },
-  serviceName: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#263238",
-    marginBottom: 2,
-  },
-  servicePrice: {
-    fontSize: 13,
-    color: "#007BFF",
-    fontWeight: "500",
-  },
-  mapCard: {
-    marginHorizontal: 16,
-    backgroundColor: "#FFFFFF",
-    borderRadius: 16,
-    padding: 20,
-    marginTop: 0,
-    marginBottom: Platform.OS === "ios" ? 100 : 80,
-    shadowColor: "#9FB1C8",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 10,
-    elevation: 5,
-  },
-  mapWrapper: {
-    height: 220,
-    borderRadius: 12,
-    overflow: "hidden",
-    marginTop: 10,
-  },
-  bookNowFixedContainer: {
-    position: "absolute",
-    bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: "#F4F7FC",
-    paddingHorizontal: 16,
-    paddingTop: 10,
-    paddingBottom: Platform.OS === "ios" ? 30 : 15,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: -5 },
-    shadowOpacity: 0.05,
-    shadowRadius: 10,
-    elevation: 10,
-    zIndex: 100,
-  },
-  bookNowButton: {
-    backgroundColor: "#007BFF",
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: 16,
-    borderRadius: 14,
-    shadowColor: "#007BFF",
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.4,
-    shadowRadius: 8,
-    elevation: 12,
-  },
-  bookNowButtonText: {
-    color: "#FFFFFF",
-    fontWeight: "700",
-    fontSize: 18,
-    marginLeft: 10,
-  },
-  // ✅ STYLES CHO MODAL
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.5)",
-    justifyContent: "flex-end",
-  },
-  modalContent: {
-    backgroundColor: "#FFF",
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    padding: 20,
-    maxHeight: "60%", // Modal chỉ chiếm tối đa 60% màn hình
-  },
-  modalHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 20,
-    paddingBottom: 15,
-    borderBottomWidth: 1,
-    borderBottomColor: "#F0F0F0",
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: "#1A2533",
-  },
-  modalItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingVertical: 15,
-    borderBottomWidth: 1,
-    borderBottomColor: "#F5F5F5",
-  },
-  modalItemIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 8,
-    backgroundColor: "#E3F2FD",
-    justifyContent: "center",
-    alignItems: "center",
-    marginRight: 15,
-  },
-  modalServiceName: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#333",
-    marginBottom: 4,
-  },
-  modalServicePrice: {
-    fontSize: 14,
-    color: "#007BFF",
-    fontWeight: "500",
-  },
+  container: { flex: 1, backgroundColor: "#F4F7FC" },
+  loader: { flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: "#F4F7FC" },
+  header: { position: "absolute", top: Platform.OS === "android" ? StatusBar.currentHeight + 10 : 50, left: 16, zIndex: 10 },
+  backBtn: { backgroundColor: "rgba(0, 0, 0, 0.4)", padding: 8, borderRadius: 50 },
+  bannerImage: { width: "100%", height: 280 }, 
+  contentContainer: { paddingHorizontal: 16, borderTopLeftRadius: 24, borderTopRightRadius: 24, marginTop: -30, backgroundColor: "#F4F7FC", paddingBottom: 20 },
+  
+  titleSection: { backgroundColor: "#FFFFFF", padding: 20, borderRadius: 16, shadowColor: "#9FB1C8", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.15, shadowRadius: 10, elevation: 5, marginBottom: 20 },
+  boatyardName: { fontSize: 24, fontWeight: "800", color: "#1A2533", marginBottom: 8 },
+  ownerSection: { flexDirection: "row", alignItems: "center" },
+  boatyardOwner: { fontSize: 14, color: "#607D8B", marginLeft: 8 },
+
+  actionButtonsContainer: { flexDirection: "row", gap: 12, marginBottom: 20 },
+  actionButton: { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", backgroundColor: "#007BFF", paddingVertical: 12, borderRadius: 12, elevation: 3 },
+  emailButton: { backgroundColor: "#17A2B8" },
+  actionButtonText: { color: "#FFFFFF", fontWeight: "bold", fontSize: 15, marginLeft: 8 },
+
+  detailsCard: { backgroundColor: "#FFFFFF", borderRadius: 16, padding: 16, marginBottom: 20, elevation: 2 },
+  sectionTitle: { fontWeight: "700", fontSize: 18, color: "#1A2533", marginBottom: 12 },
+  
+  detailItemContainer: { flexDirection: "row", marginBottom: 14 },
+  detailItemIconBg: { width: 40, height: 40, borderRadius: 20, backgroundColor: "#E3F2FD", justifyContent: "center", alignItems: "center", marginRight: 14 },
+  detailItemTextContainer: { flex: 1, justifyContent: "center" },
+  detailItemLabel: { fontSize: 12, color: "#607D8B" },
+  detailItemValue: { fontSize: 14, color: "#263238", fontWeight: "500" },
+
+  noServiceContainer: { flexDirection: "row", alignItems: "center", justifyContent: "center", padding: 20, backgroundColor: "#F7F9FC", borderRadius: 10 },
+  noServiceText: { marginLeft: 10, color: "#607D8B" },
+  
+  servicesGrid: { flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between", gap: 10 },
+  serviceCard: { width: "48%", backgroundColor: "#FFFFFF", borderRadius: 10, padding: 10, borderWidth: 1, borderColor: "#EFEFEF", marginBottom: 8 },
+  serviceIconContainer: { alignSelf: 'flex-start', backgroundColor: "#E6F7EB", padding: 6, borderRadius: 6, marginBottom: 8 },
+  serviceName: { fontSize: 13, fontWeight: "600", color: "#263238", marginBottom: 2 },
+  servicePrice: { fontSize: 12, color: "#007BFF", fontWeight: "700" },
+
+  mapCard: { marginHorizontal: 16, backgroundColor: "#FFFFFF", borderRadius: 16, padding: 16, marginBottom: 120, elevation: 2 },
+  mapWrapper: { height: 200, borderRadius: 12, overflow: "hidden", marginTop: 10 },
+
+  bookNowFixedContainer: { position: "absolute", bottom: 0, left: 0, right: 0, backgroundColor: "#FFF", paddingHorizontal: 16, paddingTop: 10, paddingBottom: Platform.OS === "ios" ? 30 : 15, borderTopLeftRadius: 20, borderTopRightRadius: 20, elevation: 20, shadowColor: "#000", shadowOpacity: 0.1, shadowRadius: 10 },
+  bookNowButton: { backgroundColor: "#007BFF", flexDirection: "row", alignItems: "center", justifyContent: "center", paddingVertical: 15, borderRadius: 12 },
+  bookNowButtonText: { color: "#FFFFFF", fontWeight: "700", fontSize: 16, marginLeft: 8 },
+
+  modalOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "flex-end" },
+  modalContent: { backgroundColor: "#FFF", borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20 },
+  modalHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 15, paddingBottom: 15, borderBottomWidth: 1, borderBottomColor: "#F0F0F0" },
+  modalTitle: { fontSize: 18, fontWeight: "bold" },
+  modalItem: { flexDirection: "row", alignItems: "center", paddingVertical: 15, borderBottomWidth: 1, borderBottomColor: "#F5F5F5" },
+  modalItemIcon: { width: 40, height: 40, borderRadius: 8, backgroundColor: "#E3F2FD", justifyContent: "center", alignItems: "center", marginRight: 15 },
+  modalServiceName: { fontSize: 15, fontWeight: "600", color: "#333" },
+  modalServicePrice: { fontSize: 13, color: "#007BFF", marginTop: 2 },
 });

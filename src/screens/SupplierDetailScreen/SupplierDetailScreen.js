@@ -10,26 +10,23 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { apiGet } from "../../ultis/api"; // Đảm bảo đường dẫn import đúng
+import { apiGet } from "../../ultis/api"; 
 
 const SupplierProductsScreen = ({ route, navigation }) => {
-  const { id } = route.params; // ID của nhà cung cấp
+  const { id } = route.params; 
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [supplierName, setSupplierName] = useState("Nhà cung cấp"); // Lưu tên tạm
+  const [supplierName, setSupplierName] = useState("Nhà cung cấp"); 
 
   useEffect(() => {
     const fetchProducts = async () => {
       try {
         setLoading(true);
-        // Chỉ gọi API lấy danh sách sản phẩm
         const response = await apiGet(`/suppliers/${id}/products`);
 
         if (response?.data?.items) {
           setProducts(response.data.items);
           
-          // Mẹo: Lấy tên nhà cung cấp từ sản phẩm đầu tiên (nếu có)
-          // để hiển thị lên tiêu đề mà không cần gọi API chi tiết supplier
           if (response.data.items.length > 0) {
             setSupplierName(response.data.items[0].supplierName);
           }
@@ -44,12 +41,10 @@ const SupplierProductsScreen = ({ route, navigation }) => {
     fetchProducts();
   }, [id]);
 
-  // Render từng item sản phẩm
   const renderProductItem = ({ item }) => (
     <TouchableOpacity
       style={styles.productCard}
       onPress={() => {
-        // Xử lý khi bấm vào sản phẩm (ví dụ: sang trang chi tiết sản phẩm)
         console.log("Xem sản phẩm:", item.id);
       }}
     >
@@ -78,7 +73,6 @@ const SupplierProductsScreen = ({ route, navigation }) => {
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Header */}
       <View style={styles.headerContainer}>
         <TouchableOpacity
           style={styles.backButton}
@@ -92,7 +86,6 @@ const SupplierProductsScreen = ({ route, navigation }) => {
         </View>
       </View>
 
-      {/* Nội dung chính */}
       {loading ? (
         <View style={styles.centerContainer}>
           <ActivityIndicator size="large" color="#003d66" />
@@ -129,7 +122,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginTop: 50,
   },
-  // Header Styles
   headerContainer: {
     flexDirection: "row",
     alignItems: "center",

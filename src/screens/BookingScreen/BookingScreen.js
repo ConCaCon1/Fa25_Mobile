@@ -105,12 +105,7 @@ const BookingScreen = ({ route, navigation }) => {
           <Text style={styles.infoText}>{selectedSlot.name}</Text>
         </View>
 
-        <View style={styles.infoCard}>
-          <Text style={styles.infoTitle}>Thuyền</Text>
-          <Text style={styles.infoText}>
-            {selectedShip ? selectedShip.name : "Chưa chọn thuyền"}
-          </Text>
-        </View>
+     
 
         <TouchableOpacity
           style={styles.pickerBtn}
