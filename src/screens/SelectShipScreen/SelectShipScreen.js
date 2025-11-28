@@ -14,7 +14,8 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { apiGet, apiPost } from "../../ultis/api"; 
 
 const SelectShipScreen = ({ route, navigation }) => {
-  const { productId, variantId, variantName, mode } = route.params;
+  const { productId, variantId, variantName, quantity } = route.params; // ✔ THÊM quantity
+
   const [shipList, setShipList] = useState([]);
   const [filteredShipList, setFilteredShipList] = useState([]);
   const [selectedShipId, setSelectedShipId] = useState("");
@@ -58,24 +59,30 @@ const SelectShipScreen = ({ route, navigation }) => {
     try {
       const orderPayload = {
         shipId: selectedShipId,
-        orderItems: [{
-          productVariantId: variantId,
-          quantity: 1,
-          productOptionName: variantName,
-        }],
+        orderItems: [
+          {
+            productVariantId: variantId,
+            quantity: quantity, 
+            productOptionName: variantName,
+          }
+        ],
       };
+
       await apiPost("/orders", orderPayload);
       
       const selectedShip = shipList.find(ship => ship.id === selectedShipId);
       Alert.alert(
         "Đặt hàng thành công! 🎉", 
-        `Đã đặt 1 sản phẩm ${String(variantName)} lên tàu ${String(selectedShip?.name || selectedShipId)}.`
+        `Đã đặt ${quantity} sản phẩm ${String(
+          variantName
+        )} lên tàu ${String(selectedShip?.name || selectedShipId)}.`
       );
       
       navigation.goBack(); 
       
     } catch (error) {
-      const errorMessage = error.response?.data?.message || "Không thể đặt hàng. Vui lòng thử lại.";
+      const errorMessage =
+        error.response?.data?.message || "Không thể đặt hàng. Vui lòng thử lại.";
       Alert.alert("Lỗi đặt hàng", errorMessage);
     } finally {
       setIsOrdering(false);
@@ -110,7 +117,12 @@ const SelectShipScreen = ({ route, navigation }) => {
         style={styles.shipIcon}
       />
       <View style={styles.shipInfo}>
-        <Text style={[styles.shipName, selectedShipId === item.id && styles.shipNameSelected]}>
+        <Text
+          style={[
+            styles.shipName,
+            selectedShipId === item.id && styles.shipNameSelected
+          ]}
+        >
           {String(item.name)}
         </Text>
       </View>
@@ -138,7 +150,7 @@ const SelectShipScreen = ({ route, navigation }) => {
         <View style={styles.titleContainer}>
           <Text style={styles.headerTitle}>Chọn Tàu Đặt Hàng</Text>
           <Text style={styles.headerSubtitle} numberOfLines={1}>
-            Sản phẩm: {String(variantName)}
+            {quantity} × {String(variantName)} {/* ✔ Hiển thị số lượng */}
           </Text>
         </View>
       </View>
@@ -163,7 +175,10 @@ const SelectShipScreen = ({ route, navigation }) => {
           <View style={styles.emptyListContainer}>
             <Ionicons name="alert-circle-outline" size={30} color="#808D9A" />
             <Text style={styles.emptyListText}>
-              {!isLoadingShips && (searchTerm ? "Không tìm thấy tàu phù hợp." : "Bạn chưa có tàu nào để đặt hàng.")}
+              {!isLoadingShips &&
+                (searchTerm
+                  ? "Không tìm thấy tàu phù hợp."
+                  : "Bạn chưa có tàu nào để đặt hàng.")}
             </Text>
           </View>
         )}
@@ -187,6 +202,7 @@ const SelectShipScreen = ({ route, navigation }) => {
   );
 };
 
+// Styles giữ nguyên…
 const styles = StyleSheet.create({
   container: { 
     flex: 1, 
@@ -217,10 +233,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     borderRadius: 50,
     elevation: 2,
-    shadowColor: '#000',
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    shadowOffset: { width: 0, height: 2 },
   },
   titleContainer: {
     flex: 1,
@@ -236,6 +248,7 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     marginTop: 2,
   },
+
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -245,11 +258,6 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     borderWidth: 1,
     borderColor: '#E9EFF5',
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 3,
-    elevation: 2,
   },
   searchInput: {
     flex: 1,
@@ -258,9 +266,9 @@ const styles = StyleSheet.create({
     marginLeft: 8,
     color: "#1C2A3A",
   },
-  listContent: {
-    paddingBottom: 20,
-  },
+
+  listContent: { paddingBottom: 20 },
+
   shipItem: {
     flexDirection: 'row',
     alignItems: 'center', 
@@ -270,25 +278,13 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     borderWidth: 1,
     borderColor: '#E9EFF5',
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 3 }, 
-    shadowOpacity: 0.1,
-    shadowRadius: 5,
-    elevation: 4,
   },
   shipItemSelected: {
     backgroundColor: "#003d66", 
     borderColor: "#003d66",
-    shadowOpacity: 0.25,
-    elevation: 6,
   },
-  shipIcon: {
-    marginRight: 15,
-  },
-  checkmarkIcon: {
-    position: 'absolute',
-    right: 15,
-  },
+  shipIcon: { marginRight: 15 },
+  checkmarkIcon: { position: 'absolute', right: 15 },
   shipInfo: {
     flex: 1, 
     justifyContent: 'center',
@@ -298,12 +294,9 @@ const styles = StyleSheet.create({
     fontSize: 18, 
     fontWeight: "600",
     color: "#1C2A3A",
-    lineHeight: 24, 
   },
-  shipNameSelected: {
-    color: "#fff",
-    fontWeight: "700",
-  },
+  shipNameSelected: { color: "#fff" },
+
   emptyListContainer: {
     alignItems: 'center',
     marginTop: 50,
@@ -319,23 +312,16 @@ const styles = StyleSheet.create({
     marginTop: 10,
     fontSize: 16,
     fontStyle: 'italic',
-    lineHeight: 22,
   },
+
   orderButton: {
     marginTop: 20,
     backgroundColor: "#003d66",
     padding: 18, 
     borderRadius: 15, 
     alignItems: "center",
-    shadowColor: "#003d66",
-    shadowOpacity: 0.5, 
-    shadowRadius: 8,
-    elevation: 8,
   },
-  orderButtonDisabled: {
-    opacity: 0.4,
-    elevation: 0,
-  },
+  orderButtonDisabled: { opacity: 0.4 },
   orderButtonText: {
     color: "#fff",
     fontWeight: "700",

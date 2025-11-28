@@ -19,34 +19,33 @@ const BookingScreen = ({ route, navigation }) => {
     boatyardName,
     selectedService,
     selectedSlot,
-    selectedShip, // ⭐ ship gửi từ SelectShipDockScreen (nếu có)
+    selectedShip,
   } = route.params;
 
   const [startTime, setStartTime] = useState(new Date());
-  const [endTime, setEndTime] = useState(new Date(Date.now() + 2 * 60 * 60 * 1000));
+  const [endTime, setEndTime] = useState(
+    new Date(Date.now() + 2 * 60 * 60 * 1000)
+  );
   const [showStartPicker, setShowStartPicker] = useState(false);
   const [showEndPicker, setShowEndPicker] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  // ====== WHEN CLICK CONFIRM ======
   const handlePressConfirm = () => {
     if (!selectedShip) {
-      // ⭐ Chưa chọn thuyền → chuyển sang màn hình chọn thuyền
       navigation.navigate("SelectShipDockScreen", {
         boatyardId,
         boatyardName,
         selectedService,
         selectedSlot,
-        startTime,
-        endTime,
+        startTime: startTime.toISOString(),
+        endTime: endTime.toISOString(),
       });
       return;
     }
 
-    handleCreateBooking(); // ⭐ Nếu đã có thuyền → gọi API
+    handleCreateBooking();
   };
 
-  // ====== CREATE BOOKING ======
   const handleCreateBooking = async () => {
     if (endTime <= startTime) {
       Alert.alert("Lỗi", "Thời gian kết thúc phải sau thời gian bắt đầu");
@@ -56,7 +55,7 @@ const BookingScreen = ({ route, navigation }) => {
     setLoading(true);
 
     const payload = {
-      shipId: selectedShip.id, // ⭐ ship đã chọn
+      shipId: selectedShip.id,
       dockSlotId: selectedSlot.id,
       startTime: startTime.toISOString(),
       endTime: endTime.toISOString(),
@@ -86,7 +85,10 @@ const BookingScreen = ({ route, navigation }) => {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
+        <TouchableOpacity
+          onPress={() => navigation.goBack()}
+          style={styles.backBtn}
+        >
           <Ionicons name="arrow-back" size={24} color="#003d66" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Xác nhận đặt chỗ</Text>
@@ -110,14 +112,24 @@ const BookingScreen = ({ route, navigation }) => {
           </Text>
         </View>
 
-        <TouchableOpacity style={styles.pickerBtn} onPress={() => setShowStartPicker(true)}>
+        <TouchableOpacity
+          style={styles.pickerBtn}
+          onPress={() => setShowStartPicker(true)}
+        >
           <Text style={styles.pickerLabel}>Thời gian bắt đầu</Text>
-          <Text style={styles.pickerValue}>{startTime.toLocaleString("vi-VN")}</Text>
+          <Text style={styles.pickerValue}>
+            {startTime.toLocaleString("vi-VN")}
+          </Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.pickerBtn} onPress={() => setShowEndPicker(true)}>
+        <TouchableOpacity
+          style={styles.pickerBtn}
+          onPress={() => setShowEndPicker(true)}
+        >
           <Text style={styles.pickerLabel}>Thời gian kết thúc</Text>
-          <Text style={styles.pickerValue}>{endTime.toLocaleString("vi-VN")}</Text>
+          <Text style={styles.pickerValue}>
+            {endTime.toLocaleString("vi-VN")}
+          </Text>
         </TouchableOpacity>
 
         <TouchableOpacity

@@ -50,7 +50,6 @@ const BoatyardDetailsScreen = ({ route, navigation }) => {
   const [loading, setLoading] = useState(true);
   const [services, setServices] = useState([]);
   
-  // State quản lý Modal chọn dịch vụ
   const [modalVisible, setModalVisible] = useState(false);
 
   useEffect(() => {
@@ -88,18 +87,16 @@ const BoatyardDetailsScreen = ({ route, navigation }) => {
     if (boatyard?.email) Linking.openURL(`mailto:${boatyard.email}`);
   };
 
-  // 1. Mở Modal chọn dịch vụ
   const handleOpenBookingModal = () => {
     setModalVisible(true);
   };
 
-  // 2. Xử lý khi chọn xong dịch vụ -> Chuyển sang BookingScreen
   const handleSelectService = (service) => {
-    setModalVisible(false); // Đóng modal
+    setModalVisible(false); 
     navigation.navigate("SelectDockSlotScreen", {
       boatyardId: boatyard.id,
       boatyardName: boatyard.name,
-      selectedService: service, // Truyền dịch vụ đã chọn sang trang Booking
+      selectedService: service, 
     });
   };
 
@@ -225,12 +222,11 @@ const BoatyardDetailsScreen = ({ route, navigation }) => {
         </View>
       </ScrollView>
 
-      {/* ✅ ĐIỀU KIỆN: Chỉ hiển thị nút Đặt lịch khi có dịch vụ */}
       {services.length > 0 && (
         <View style={styles.bookNowFixedContainer}>
           <TouchableOpacity
             style={styles.bookNowButton}
-            onPress={handleOpenBookingModal} // Mở Modal thay vì chuyển trang ngay
+            onPress={handleOpenBookingModal} 
             activeOpacity={0.9}
           >
             <Ionicons name="calendar-outline" size={22} color="#FFFFFF" />
@@ -239,7 +235,6 @@ const BoatyardDetailsScreen = ({ route, navigation }) => {
         </View>
       )}
 
-      {/* ✅ MODAL CHỌN DỊCH VỤ */}
       <Modal
         animationType="slide"
         transparent={true}
@@ -258,7 +253,7 @@ const BoatyardDetailsScreen = ({ route, navigation }) => {
                 </View>
 
                 <ScrollView
-                  style={{ maxHeight: 300 }} // Giới hạn chiều cao nếu danh sách dài
+                  style={{ maxHeight: 300 }} 
                   showsVerticalScrollIndicator={false}
                 >
                   {services.map((service) => (
