@@ -21,7 +21,6 @@ const OTPScreen = ({ route, navigation }) => {
       const newOtp = [...otpDigits];
       newOtp[index] = text;
       setOtpDigits(newOtp);
-      // tự động focus sang ô tiếp theo
       if (index < 3) inputRefs.current[index + 1].focus();
     } else if (text === "") {
       const newOtp = [...otpDigits];

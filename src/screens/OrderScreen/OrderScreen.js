@@ -9,14 +9,13 @@ import {
   RefreshControl,
   TextInput,
   Modal,
-  Platform,
   StatusBar,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { apiGet } from "../../ultis/api";
 import BottomNavBar from "../../components/BottomNavBar";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
-
+import { useFocusEffect } from "@react-navigation/native";
 const PAGE_SIZE = 5;
 
 const formatCurrency = (amount) => {
@@ -69,20 +68,19 @@ const OrderScreen = ({ navigation }) => {
     }
   };
 
-  useEffect(() => {
-    fetchOrders();
-  }, []);
+ useFocusEffect(
+    useCallback(() => {
+      fetchOrders();
+    }, [])
+  )
 
-  // ✅ 1. Tách logic lọc ra bằng useMemo để tái sử dụng chính xác
   const filteredData = useMemo(() => {
     let filtered = allOrders;
     
-    // Lọc theo trạng thái
     if (filterStatus !== "All") {
       filtered = filtered.filter((item) => item.status === filterStatus);
     }
     
-    // Lọc theo tìm kiếm
     if (searchText) {
       filtered = filtered.filter((item) => item.id.toString().slice(-6).includes(searchText));
     }
@@ -90,14 +88,12 @@ const OrderScreen = ({ navigation }) => {
     return filtered;
   }, [allOrders, filterStatus, searchText]);
 
-  // ✅ 2. Cắt trang dựa trên filteredData đã tính toán ở trên
   useEffect(() => {
     const endIndex = currentPage * PAGE_SIZE;
     setVisibleOrders(filteredData.slice(0, endIndex));
-    setLoadingMore(false); // Tắt loading khi cắt xong
+    setLoadingMore(false); 
   }, [filteredData, currentPage]);
 
-  // Reset về trang 1 khi đổi bộ lọc
   useEffect(() => setCurrentPage(1), [searchText, filterStatus]);
 
   const onRefresh = useCallback(() => {
@@ -106,11 +102,9 @@ const OrderScreen = ({ navigation }) => {
     fetchOrders();
   }, []);
 
-  // ✅ 3. Sửa điều kiện: So sánh với filteredData.length (số lượng thực tế sau khi lọc)
   const handleLoadMore = () => {
     if (loadingMore) return;
     
-    // Nếu số lượng đang hiện >= tổng số lượng ĐÃ LỌC thì dừng, không hiện loading nữa
     if (visibleOrders.length >= filteredData.length) return;
 
     setLoadingMore(true);
@@ -207,7 +201,6 @@ const OrderScreen = ({ navigation }) => {
               value={searchText}
               onChangeText={setSearchText}
               keyboardType="default" 
-             
               returnKeyType="search"
             />
           </View>

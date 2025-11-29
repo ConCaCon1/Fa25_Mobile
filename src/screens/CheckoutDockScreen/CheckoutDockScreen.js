@@ -240,9 +240,9 @@ const CheckoutDockScreen = ({ route, navigation }) => {
         <SafeAreaView style={{ flex: 1, backgroundColor: '#fff' }}>
           <View style={styles.modalHeader}>
              <TouchableOpacity onPress={() => setShowWebView(false)} style={styles.closeButton}>
-                <Ionicons name="close" size={28} color="#003d66" />
+         
              </TouchableOpacity>
-             <Text style={styles.modalTitle}>Cổng thanh toán</Text>
+          
              <View style={{width: 28}} />
           </View>
 
