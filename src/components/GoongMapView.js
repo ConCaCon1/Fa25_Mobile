@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { View, ActivityIndicator, StyleSheet } from "react-native";
 import { WebView } from "react-native-webview";
 import { VITE_GOONG_MAP_KEY } from "@env";
@@ -10,10 +10,9 @@ const GoongMapView = ({
   zoom = 13,
   icon = "ship",
   popupText = "Vị trí Tàu/Phương tiện",
-  markerSize = 36,
+  markerSize = 42,
   borderRadius = 16,
 }) => {
-  const webviewRef = useRef(null);
   const [portsData, setPortsData] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -21,189 +20,176 @@ const GoongMapView = ({
     const fetchPorts = async () => {
       try {
         setLoading(true);
-        const response = await apiGet("/ports"); 
-        if (response.status === 200 && response.data?.items) {
-          setPortsData(response.data.items);
-        } else {
-          console.warn("No ports data:", response);
+        const res = await apiGet("/ports");
+        if (res.status === 200 && res.data?.items) {
+          setPortsData(res.data.items);
         }
-      } catch (error) {
-        console.error("Failed to fetch ports:", error);
+      } catch (err) {
+        console.warn(err);
       } finally {
         setLoading(false);
       }
     };
-
     fetchPorts();
   }, []);
 
-  const safePortsData = portsData
+  const safePorts = portsData
     ? JSON.stringify(portsData).replace(/'/g, "\\'")
     : "[]";
 
   const html = `
-    <!DOCTYPE html>
-    <html>
-      <head>
-        <meta charset="utf-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <link href="https://unpkg.com/maplibre-gl/dist/maplibre-gl.css" rel="stylesheet"/>
-        <script src="https://unpkg.com/maplibre-gl/dist/maplibre-gl.js"></script>
-        <style>
-          html, body, #map { height: 100%; margin: 0; padding: 0; border-radius: ${borderRadius}px; overflow: hidden; }
-          
-          .custom-marker {
-            font-size: ${markerSize}px;
-            cursor: pointer;
-            transform: translate(-50%, -100%);
-            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), filter 0.3s ease;
-            filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.35));
-          }
-          .custom-marker:hover {
-            transform: translate(-50%, -130%) scale(1.15);
-            filter: drop-shadow(0 6px 12px rgba(0, 0, 0, 0.5));
-          }
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link href="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.css" rel="stylesheet">
+  <script src="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.js"></script>
+  <style>
+    body,html,#map{margin:0;padding:0;height:100%;overflow:hidden;border-radius:${borderRadius}px}
+    .ship{font-size:${markerSize}px;transform:translate(-50%,-100%);filter:drop-shadow(0 5px 10px rgba(0,0,0,0.6))}
+    .port{font-size:34px;transform:translate(-50%,-100%)}
+    .maplibregl-popup-content{font-family:system-ui;padding:10px 15px;border-radius:12px;background:#fff;box-shadow:0 6px 20px rgba(0,0,0,0.25);text-align:center}
+    .maplibregl-popup-close-button{display:none}
+  </style>
+</head>
+<body>
+<div id="map"></div>
 
-          .port-marker {
-            font-size: 32px;
-            cursor: pointer;
-            transform: translate(-50%, -100%);
-            filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.3));
-            transition: transform 0.2s ease;
-          }
-          .port-marker:hover {
-            transform: translate(-50%, -120%) scale(1.1);
-          }
-          
-          .maplibregl-popup-content {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            font-weight: 500;
-            font-size: 15px;
-            color: #1a1a1a;
-            padding: 10px 15px;
-            border-radius: 12px;
-            background: #ffffff;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-            border: 1px solid rgba(0,0,0,0.05);
-          }
-          .maplibregl-popup-tip { border-top-color: #ffffff; }
-          .maplibregl-popup-close-button { display: none; }
-        </style>
-      </head>
-      <body>
-        <div id="map"></div>
-        <script>
-          const startLat = ${latitude};
-          const startLng = ${longitude};
-          const endLat = ${latitude + 0.02};
-          const endLng = ${longitude + 0.00};
-          const duration = 5000;
-          const steps = 100;
-          let currentStep = 0;
+<script>
+  // Biến toàn cục
+  let map, shipMarker;
+  let angle = 0; // để tàu xoay theo hướng di chuyển (đẹp hơn)
 
-          const ports = ${safePortsData};
+  const ports = ${safePorts};
 
-          const map = new maplibregl.Map({
-            container: 'map',
-            style: 'https://tiles.goong.io/assets/goong_map_web.json?api_key=${VITE_GOONG_MAP_KEY}',
-            center: [startLng, startLat],
-            zoom: ${zoom}
-          });
+  // Tạo tàu ngay từ đầu
+  const shipEl = document.createElement('div');
+  shipEl.className = 'ship';
+  shipEl.innerText = '${icon}';
 
-          map.addControl(new maplibregl.NavigationControl());
+  const shipPopup = new maplibregl.Popup({offset:40, closeOnClick:false, closeButton:false})
+    .setText('${popupText.replace(/'/g, "\\'")}');
 
-          // Marker tàu di chuyển
-          const el = document.createElement('div');
-          el.className = 'custom-marker';
-          el.innerText = '${icon}';
+  // Khởi tạo map
+  map = new maplibregl.Map({
+    container: 'map',
+    style: 'https://tiles.goong.io/assets/goong_map_web.json?api_key=${VITE_GOONG_MAP_KEY}',
+    center: [${longitude}, ${latitude}],
+    zoom: ${zoom}
+  });
 
-          const popup = new maplibregl.Popup({ offset: 35, closeOnClick: false })
-            .setText('${popupText.replace(/'/g, "\\'")}');
+  map.addControl(new maplibregl.NavigationControl(), 'top-right');
 
-          const marker = new maplibregl.Marker({ element: el })
-            .setLngLat([startLng, startLat])
-            .setPopup(popup)
-            .addTo(map);
+  // TẠO TÀU NGAY KHI MAP SẴN SÀNG (không đợi 'load')
+  map.on('styledata', () => {
+    if (shipMarker) return;
 
-          ports.forEach(port => {
-            const portEl = document.createElement('div');
-            portEl.className = 'port-marker';
-            portEl.innerText = '⚓';
+    shipMarker = new maplibregl.Marker({element: shipEl})
+      .setLngLat([${longitude}, ${latitude}])
+      .setPopup(shipPopup)
+      .addTo(map);
+    shipMarker.togglePopup();
 
-            const portPopup = new maplibregl.Popup({ offset: 30, closeOnClick: false })
-              .setHTML(\`
-                <div style="text-align:center;">
-                  <strong style="font-size:16px;">\${port.name}</strong><br/>
-                  <small>\${port.city}, \${port.country}</small>
-                </div>
-              \`);
+    // Thêm các cảng
+    ports.forEach(p => {
+      if (!p.latitude || !p.longitude) return;
+      const el = document.createElement('div');
+      el.className = 'port';
+      el.innerText = '⚓';
+      new maplibregl.Marker({element: el})
+        .setLngLat([parseFloat(p.longitude), parseFloat(p.latitude)])
+        .setPopup(new maplibregl.Popup({offset:30,closeButton:false})
+          .setHTML('<strong>'+(p.name||'Cảng')+'</strong><br><small>'+(p.city||'')+', '+(p.country||'')+'</small>'))
+        .addTo(map);
+    });
+  });
 
-            new maplibregl.Marker({ element: portEl })
-              .setLngLat([parseFloat(port.longitude), parseFloat(port.latitude)])
-              .setPopup(portPopup)
-              .addTo(map);
-          });
+  // DI CHUYỂN LIÊN TỤC – KHÔNG DÙNG 'load', 'render' gì cả
+  // Dùng setInterval + tính toán vị trí theo thời gian thực
+  let startTime = Date.now();
 
-          // Di chuyển marker
-          map.on('load', () => {
-            marker.togglePopup();
+  function moveShip() {
+    const elapsed = (Date.now() - startTime) / 1000; // giây
+    const speed = 0.02; // độ/giây (tùy chỉnh tốc độ)
+    
+    // Di chuyển theo hình sin + cos → đường tròn đẹp
+    const centerLng = ${longitude};
+    const centerLat = ${latitude};
+    const radius = 0.05; // bán kính vòng tròn
 
-            const moveMarker = () => {
-              if (currentStep > steps) return;
-              const lat = startLat + ((endLat - startLat) * currentStep / steps);
-              const lng = startLng + ((endLng - startLng) * currentStep / steps);
-              marker.setLngLat([lng, lat]);
-              map.setCenter([lng, lat]);
-              currentStep++;
-              setTimeout(moveMarker, duration / steps);
-            };
-            moveMarker();
-          });
-        </script>
-      </body>
-    </html>
-  `;
+    const lng = centerLng + radius * Math.cos(elapsed * speed);
+    const lat = centerLat + radius * Math.sin(elapsed * speed * 0.7); // hơi elip cho đẹp
+
+    shipMarker.setLngLat([lng, lat]);
+
+    // Xoay tàu theo hướng di chuyển (tùy chọn, rất đẹp)
+    angle = (angle + 2) % 360;
+    shipEl.style.transform = 'translate(-50%, -100%) rotate(' + angle + 'deg)';
+
+    requestAnimationFrame(moveShip);
+  }
+
+  // Bắt đầu di chuyển ngay khi có thể
+  setTimeout(moveShip, 1000);
+
+  // Fallback cực mạnh: nếu 8s vẫn chưa có marker → ép tạo
+  setTimeout(() => {
+    if (!shipMarker && map) {
+      shipMarker = new maplibregl.Marker({element: shipEl})
+        .setLngLat([${longitude}, ${latitude}])
+        .setPopup(shipPopup)
+        .addTo(map);
+      shipMarker.togglePopup();
+      moveShip();
+    }
+  }, 8000);
+</script>
+</body>
+</html>
+`;
 
   return (
     <View style={[styles.card, { borderRadius }]}>
       {loading ? (
         <View style={styles.loading}>
-          <ActivityIndicator size="large" color="#007BFF" />
+          <ActivityIndicator size="large" color="#0066FF" />
         </View>
       ) : (
         <WebView
-          ref={webviewRef}
-          originWhitelist={["*"]}
           source={{ html }}
-          javaScriptEnabled
-          domStorageEnabled
-          style={{ flex: 1, borderRadius }}
-          startInLoadingState={false}
+          javaScriptEnabled={true}
+          domStorageEnabled={true}
+          originWhitelist={["*"]}
+          style={{ flex: 1 }}
+          scrollEnabled={false}
+          bounces={false}
+          scalesPageToFit={false}
         />
       )}
     </View>
   );
 };
 
-export default GoongMapView;
-
 const styles = StyleSheet.create({
   card: {
     flex: 1,
     margin: 12,
-    backgroundColor: "#ffffff",
+    backgroundColor: "#fff",
     borderRadius: 16,
     overflow: "hidden",
-    elevation: 8,
+    elevation: 10,
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.22,
+    shadowRadius: 16,
   },
   loading: {
     flex: 1,
-    alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#f7f7f7",
+    alignItems: "center",
+    backgroundColor: "#f8f9fa",
   },
 });
+
+export default GoongMapView;
