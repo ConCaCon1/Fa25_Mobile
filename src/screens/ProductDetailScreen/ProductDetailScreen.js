@@ -18,9 +18,24 @@ import {
 } from "react-native";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { apiGet, apiPost } from "../../ultis/api";
+// Đảm bảo đường dẫn import này đúng với project của bạn
+import { apiGet, apiPost } from "../../ultis/api"; 
 
 const { width } = Dimensions.get("window");
+
+// --- COMPONENT PHỤ: THANH TIẾN TRÌNH ĐÁNH GIÁ ---
+const RatingProgressBar = ({ star, count, total }) => {
+  const percent = total > 0 ? (count / total) * 100 : 0;
+  return (
+    <View style={styles.progressBarRow}>
+      <Text style={styles.starLabel}>{star} sao</Text>
+      <View style={styles.progressBarTrack}>
+        <View style={[styles.progressBarFill, { width: `${percent}%` }]} />
+      </View>
+      <Text style={styles.countLabel}>{count}</Text>
+    </View>
+  );
+};
 
 const ProductDetailScreen = ({ route, navigation }) => {
   const { id } = route.params;
@@ -291,6 +306,7 @@ const ProductDetailScreen = ({ route, navigation }) => {
         contentContainerStyle={{ paddingBottom: 100 }}
         showsVerticalScrollIndicator={false}
       >
+        {/* HERO IMAGE */}
         <View style={styles.imageContainer}>
           <FlatList
             horizontal
@@ -318,6 +334,7 @@ const ProductDetailScreen = ({ route, navigation }) => {
           </View>
         </View>
 
+        {/* BASIC INFO */}
         <View style={styles.sectionCard}>
           <Text style={styles.productName}>{product.name}</Text>
           <Text style={styles.productPrice}>{priceDisplay}</Text>
@@ -332,6 +349,7 @@ const ProductDetailScreen = ({ route, navigation }) => {
           </View>
         </View>
 
+        {/* DETAILS */}
         <View style={styles.sectionCard}>
           <Text style={styles.sectionHeader}>Thông tin chi tiết</Text>
 
@@ -371,85 +389,128 @@ const ProductDetailScreen = ({ route, navigation }) => {
           <Text style={styles.description}>{product.description}</Text>
         </View>
 
+        {/* --- REVIEWS SECTION (NEW DESIGN) --- */}
         <View style={styles.sectionCard}>
-          <View style={styles.reviewHeader}>
-            <View>
-              <Text style={styles.sectionHeader}>Đánh giá sản phẩm</Text>
-              <View
-                style={{
-                  flexDirection: "row",
-                  alignItems: "center",
-                  marginTop: 4,
-                }}
-              >
-                <RenderStars rating={parseFloat(averageRating)} size={14} />
-                <Text
-                  style={{
-                    color: "#003d66",
-                    fontWeight: "bold",
-                    marginLeft: 6,
-                  }}
-                >
-                  {averageRating}/5
-                </Text>
-                <Text style={{ color: "#888", fontSize: 12 }}>
-                  {" "}
-                  ({reviews.length} đánh giá)
-                </Text>
+          <Text style={styles.sectionHeader}>Đánh giá sản phẩm</Text>
+
+          {/* 1. Rating Overview (Score + Bars) */}
+          <View style={styles.ratingOverviewContainer}>
+            <View style={styles.ratingBigBox}>
+              <Text style={styles.ratingBigText}>{averageRating}</Text>
+              <View style={{ marginVertical: 4 }}>
+                <RenderStars rating={parseFloat(averageRating)} size={18} />
               </View>
+              <Text style={styles.ratingTotalText}>
+                {reviews.length} đánh giá
+              </Text>
             </View>
+
+            <View style={styles.ratingChartBox}>
+              <RatingProgressBar
+                star={5}
+                count={counts[5]}
+                total={counts.ALL}
+              />
+              <RatingProgressBar
+                star={4}
+                count={counts[4]}
+                total={counts.ALL}
+              />
+              <RatingProgressBar
+                star={3}
+                count={counts[3]}
+                total={counts.ALL}
+              />
+              <RatingProgressBar
+                star={2}
+                count={counts[2]}
+                total={counts.ALL}
+              />
+              <RatingProgressBar
+                star={1}
+                count={counts[1]}
+                total={counts.ALL}
+              />
+            </View>
+          </View>
+
+          <View style={styles.divider} />
+
+          {/* 2. Filters */}
+          <Text style={styles.filterTitle}>Lọc theo:</Text>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.filterContainer}
+          >
+            <FilterButton type="ALL" label="Tất cả" count={counts.ALL} />
+            <FilterButton type="5" label="5 Sao" count={counts[5]} />
+            <FilterButton type="4" label="4 Sao" count={counts[4]} />
+            <FilterButton type="3" label="3 Sao" count={counts[3]} />
+            <FilterButton type="2" label="2 Sao" count={counts[2]} />
+            <FilterButton type="1" label="1 Sao" count={counts[1]} />
+            <FilterButton
+              type="COMMENT"
+              label="Có bình luận"
+              count={counts.COMMENT}
+            />
+          </ScrollView>
+
+          <View style={styles.divider} />
+
+          {/* 3. Review List Header */}
+          <View style={styles.reviewListHeader}>
+            <Text style={styles.reviewListTitle}>Bình luận từ khách hàng</Text>
             <TouchableOpacity onPress={() => setReviewModalVisible(true)}>
-              <Text style={styles.writeReviewBtn}>Viết đánh giá</Text>
+              <Text style={styles.writeReviewLink}>Viết đánh giá</Text>
             </TouchableOpacity>
           </View>
 
-          <View style={{ marginVertical: 12 }}>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-              <FilterButton type="ALL" label="Tất cả" count={counts.ALL} />
-              <FilterButton type="5" label="5 Sao" count={counts[5]} />
-              <FilterButton type="4" label="4 Sao" count={counts[4]} />
-              <FilterButton type="3" label="3 Sao" count={counts[3]} />
-              <FilterButton type="2" label="2 Sao" count={counts[2]} />
-              <FilterButton type="1" label="1 Sao" count={counts[1]} />
-              <FilterButton
-                type="COMMENT"
-                label="Có Bình Luận"
-                count={counts.COMMENT}
-              />
-            </ScrollView>
-          </View>
-
+          {/* 4. Render Reviews */}
           {filteredReviews.length === 0 ? (
-            <View style={{ alignItems: "center", padding: 20 }}>
+            <View style={styles.emptyReviewContainer}>
               <Ionicons
                 name="chatbubble-ellipses-outline"
                 size={40}
                 color="#DDD"
               />
-              <Text style={styles.noReviewText}>Chưa có đánh giá phù hợp.</Text>
+              <Text style={styles.noReviewText}>
+                Chưa có đánh giá phù hợp.
+              </Text>
             </View>
           ) : (
             filteredReviews.map((item) => (
-              <View key={item.id} style={styles.reviewItem}>
-                <View style={styles.avatarContainer}>
-                  <Text style={styles.avatarText}>
-                    {item.accountName
-                      ? item.accountName.charAt(0).toUpperCase()
-                      : "?"}
-                  </Text>
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.reviewerName}>
-                    {item.accountName || "Người dùng"}
-                  </Text>
-                  <View style={{ flexDirection: "row", alignItems: "center" }}>
-                    <RenderStars rating={item.rating} size={12} />
-                    <Text style={styles.reviewDate}>
-                      {" "}
-                      • {new Date(item.createdDate).toLocaleDateString("vi-VN")}
+              <View key={item.id} style={styles.reviewCard}>
+                <View style={styles.reviewCardHeader}>
+                  <View style={styles.avatarContainer}>
+                    <Text style={styles.avatarText}>
+                      {item.accountName
+                        ? item.accountName.charAt(0).toUpperCase()
+                        : "?"}
                     </Text>
                   </View>
-                  <Text style={styles.reviewComment}>{item.comment}</Text>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.reviewerName}>
+                      {item.accountName || "Khách hàng ẩn danh"}
+                    </Text>
+                    <View
+                      style={{ flexDirection: "row", alignItems: "center" }}
+                    >
+                      <RenderStars rating={item.rating} size={12} />
+                    </View>
+                  </View>
+                  <Text style={styles.reviewDate}>
+                    {new Date(item.createdDate).toLocaleDateString("vi-VN")}
+                  </Text>
+                </View>
+
+                <Text style={styles.reviewContent}>{item.comment}</Text>
+
+                <View style={styles.reviewFooter}>
+                  <TouchableOpacity style={styles.helpfulBtn}>
+                    <Ionicons name="thumbs-up-outline" size={14} color="#888" />
+                    <Text style={styles.helpfulText}>Hữu ích?</Text>
+                  </TouchableOpacity>
                 </View>
               </View>
             ))
@@ -457,6 +518,7 @@ const ProductDetailScreen = ({ route, navigation }) => {
         </View>
       </ScrollView>
 
+      {/* FOOTER ACTIONS */}
       <View style={styles.footer}>
         <TouchableOpacity style={styles.chatButton}>
           <Ionicons name="chatbox-outline" size={24} color="#003d66" />
@@ -465,13 +527,12 @@ const ProductDetailScreen = ({ route, navigation }) => {
 
         <View style={styles.verticalLine} />
 
-
-
         <TouchableOpacity style={styles.buyButton} onPress={handleOrderNow}>
           <Text style={styles.buyButtonText}>Mua Ngay</Text>
         </TouchableOpacity>
       </View>
 
+      {/* MODAL: VARIANT SELECTION */}
       <Modal
         animationType="slide"
         transparent={true}
@@ -504,7 +565,9 @@ const ProductDetailScreen = ({ route, navigation }) => {
                     source={{ uri: product.productImages[0]?.imageUrl }}
                     style={styles.modalProdImage}
                   />
-                  <View style={{ justifyContent: "flex-end", marginLeft: 10 }}>
+                  <View
+                    style={{ justifyContent: "flex-end", marginLeft: 10 }}
+                  >
                     <Text style={styles.modalPricePreview}>
                       {selectedVariantId
                         ? `${product.productVariants
@@ -555,7 +618,9 @@ const ProductDetailScreen = ({ route, navigation }) => {
                   <View style={styles.qtyBox}>
                     <TouchableOpacity
                       style={styles.qtyBtn}
-                      onPress={() => setQuantity((q) => Math.max(1, q - 1))}
+                      onPress={() =>
+                        setQuantity((q) => Math.max(1, q - 1))
+                      }
                     >
                       <Text style={{ fontSize: 18, color: "#003d66" }}>-</Text>
                     </TouchableOpacity>
@@ -599,6 +664,7 @@ const ProductDetailScreen = ({ route, navigation }) => {
         </TouchableWithoutFeedback>
       </Modal>
 
+      {/* MODAL: WRITE REVIEW */}
       <Modal
         animationType="fade"
         transparent={true}
@@ -802,7 +868,7 @@ const styles = StyleSheet.create({
     height: 1,
     backgroundColor: "#E9EFF5",
     marginVertical: 4,
-    marginLeft: 44,
+    marginLeft: 0,
   },
   descriptionTitle: {
     fontSize: 15,
@@ -818,30 +884,91 @@ const styles = StyleSheet.create({
     textAlign: "justify",
   },
 
-  reviewHeader: {
+  // --- STYLES REVIEW MỚI ---
+  ratingOverviewContainer: {
     flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
+    alignItems: "center",
+    marginBottom: 10,
+    marginTop: 5,
   },
-  writeReviewBtn: {
+  ratingBigBox: {
+    alignItems: "center",
+    justifyContent: "center",
+    paddingRight: 20,
+    borderRightWidth: 1,
+    borderRightColor: "#EEE",
+  },
+  ratingBigText: {
+    fontSize: 32,
+    fontWeight: "bold",
     color: "#003d66",
-    fontWeight: "600",
-    fontSize: 14,
-    paddingVertical: 5,
+  },
+  ratingTotalText: {
+    fontSize: 12,
+    color: "#888",
+  },
+  ratingChartBox: {
+    flex: 1,
+    paddingLeft: 20,
+    justifyContent: "center",
+  },
+  progressBarRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 4,
+  },
+  starLabel: {
+    fontSize: 12,
+    color: "#555",
+    width: 35,
+  },
+  progressBarTrack: {
+    flex: 1,
+    height: 6,
+    backgroundColor: "#F0F0F0",
+    borderRadius: 3,
+    marginHorizontal: 8,
+    overflow: "hidden",
+  },
+  progressBarFill: {
+    height: "100%",
+    backgroundColor: "#003d66",
+    borderRadius: 3,
+  },
+  countLabel: {
+    fontSize: 12,
+    color: "#888",
+    width: 25,
+    textAlign: "right",
   },
 
+  filterTitle: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#1C2A3A",
+    marginBottom: 10,
+    marginTop: 5,
+  },
+  filterContainer: {
+    paddingBottom: 8,
+  },
   filterBtn: {
-    paddingVertical: 6,
-    paddingHorizontal: 14,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
     borderRadius: 20,
     borderWidth: 1,
     borderColor: "#E9EFF5",
-    backgroundColor: "#F2F6FA",
-    marginRight: 8,
+    backgroundColor: "#FFF",
+    marginRight: 10,
+    elevation: 1,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 1,
   },
   filterBtnActive: {
     borderColor: "#003d66",
-    backgroundColor: "#E1F5FE",
+    backgroundColor: "#F0F8FF",
   },
   filterBtnText: {
     fontSize: 13,
@@ -849,40 +976,86 @@ const styles = StyleSheet.create({
   },
   filterBtnTextActive: {
     color: "#003d66",
-    fontWeight: "600",
+    fontWeight: "700",
   },
 
-  reviewItem: {
-    paddingVertical: 12,
-    borderTopWidth: 1,
-    borderTopColor: "#E9EFF5",
+  reviewListHeader: {
     flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 15,
+    marginTop: 10,
+  },
+  reviewListTitle: {
+    fontSize: 16,
+    fontWeight: "bold",
+    color: "#1C2A3A",
+  },
+  writeReviewLink: {
+    color: "#003d66",
+    fontSize: 14,
+    textDecorationLine: "underline",
+  },
+
+  emptyReviewContainer: {
+    alignItems: "center",
+    paddingVertical: 30,
+  },
+  noReviewText: {
+    color: "#888",
+    marginTop: 10,
+  },
+
+  reviewCard: {
+    backgroundColor: "#FFF",
+    marginBottom: 16,
+    paddingBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: "#F0F0F0",
+  },
+  reviewCardHeader: {
+    flexDirection: "row",
+    marginBottom: 8,
   },
   avatarContainer: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     backgroundColor: "#E1F5FE",
     alignItems: "center",
     justifyContent: "center",
-    marginRight: 10,
+    marginRight: 12,
+    borderWidth: 1,
+    borderColor: "#FFF",
   },
   avatarText: { fontWeight: "bold", color: "#003d66" },
   reviewerName: {
-    fontSize: 13,
-    fontWeight: "500",
+    fontSize: 14,
+    fontWeight: "600",
     marginBottom: 2,
     color: "#1C2A3A",
   },
   reviewDate: { fontSize: 11, color: "#888" },
-  reviewComment: {
-    marginTop: 6,
+  reviewContent: {
     fontSize: 14,
     color: "#333",
-    lineHeight: 20,
+    lineHeight: 21,
+    marginBottom: 8,
   },
-  noReviewText: { color: "#888", marginTop: 10 },
+  reviewFooter: {
+    flexDirection: "row",
+  },
+  helpfulBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  helpfulText: {
+    marginLeft: 4,
+    fontSize: 12,
+    color: "#888",
+  },
 
+  // --- FOOTER & MODALS ---
   footer: {
     position: "absolute",
     bottom: 0,
@@ -902,11 +1075,6 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
   },
   chatButton: {
-    alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: 12,
-  },
-  cartButton: {
     alignItems: "center",
     justifyContent: "center",
     paddingHorizontal: 12,

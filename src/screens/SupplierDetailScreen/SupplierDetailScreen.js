@@ -10,13 +10,13 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { apiGet } from "../../ultis/api"; 
+import { apiGet } from "../../ultis/api";
 
 const SupplierProductsScreen = ({ route, navigation }) => {
-  const { id } = route.params; 
+  const { id } = route.params;
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [supplierName, setSupplierName] = useState("Nhà cung cấp"); 
+  const [supplierName, setSupplierName] = useState("Nhà cung cấp");
 
   useEffect(() => {
     const fetchProducts = async () => {
@@ -26,7 +26,7 @@ const SupplierProductsScreen = ({ route, navigation }) => {
 
         if (response?.data?.items) {
           setProducts(response.data.items);
-          
+
           if (response.data.items.length > 0) {
             setSupplierName(response.data.items[0].supplierName);
           }
@@ -44,9 +44,12 @@ const SupplierProductsScreen = ({ route, navigation }) => {
   const renderProductItem = ({ item }) => (
     <TouchableOpacity
       style={styles.productCard}
+      // --- CẬP NHẬT PHẦN NÀY ---
       onPress={() => {
-        console.log("Xem sản phẩm:", item.id);
+        // Điều hướng sang màn hình chi tiết và truyền ID sản phẩm
+        navigation.navigate("ProductDetailScreen", { id: item.id });
       }}
+      // --------------------------
     >
       <Image
         source={{
@@ -61,10 +64,10 @@ const SupplierProductsScreen = ({ route, navigation }) => {
           {item.name}
         </Text>
         <Text style={styles.productDesc} numberOfLines={1}>
-            {item.description}
+          {item.description}
         </Text>
         <Text style={styles.dateText}>
-            Ngày tạo: {new Date(item.createdDate).toLocaleDateString('vi-VN')}
+          Ngày tạo: {new Date(item.createdDate).toLocaleDateString("vi-VN")}
         </Text>
       </View>
       <Ionicons name="chevron-forward" size={20} color="#C4C4C4" />
@@ -80,9 +83,13 @@ const SupplierProductsScreen = ({ route, navigation }) => {
         >
           <Ionicons name="arrow-back-outline" size={24} color="#1C2A3A" />
         </TouchableOpacity>
-        <View style={{marginLeft: 16, flex: 1}}>
-            <Text style={styles.headerTitle} numberOfLines={1}>Sản phẩm</Text>
-            <Text style={styles.headerSubtitle} numberOfLines={1}>Của: {supplierName}</Text>
+        <View style={{ marginLeft: 16, flex: 1 }}>
+          <Text style={styles.headerTitle} numberOfLines={1}>
+            Sản phẩm
+          </Text>
+          <Text style={styles.headerSubtitle} numberOfLines={1}>
+            Của: {supplierName}
+          </Text>
         </View>
       </View>
 
@@ -143,19 +150,16 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "#5A6A7D",
   },
-  // List Styles
   listContainer: {
     padding: 16,
   },
-  // Product Card Styles
   productCard: {
     flexDirection: "row",
     backgroundColor: "#fff",
     borderRadius: 12,
     marginBottom: 12,
     padding: 12,
-    alignItems: 'center',
-    // Shadow cho đẹp
+    alignItems: "center",
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
@@ -178,10 +182,10 @@ const styles = StyleSheet.create({
   },
   categoryBadge: {
     fontSize: 12,
-    color: "#1967D2", // Màu xanh google
+    color: "#1967D2",
     fontWeight: "600",
     marginBottom: 4,
-    textTransform: 'uppercase'
+    textTransform: "uppercase",
   },
   productName: {
     fontSize: 16,
@@ -195,9 +199,9 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   dateText: {
-      fontSize: 11,
-      color: "#9AA0A6",
-      fontStyle: 'italic'
+    fontSize: 11,
+    color: "#9AA0A6",
+    fontStyle: "italic",
   },
   emptyText: {
     marginTop: 10,
