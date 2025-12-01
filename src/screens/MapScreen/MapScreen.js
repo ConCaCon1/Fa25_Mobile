@@ -157,6 +157,8 @@ const MapScreen = ({ navigation }) => {
     } catch (error) {}
   };
 
+  // --- CẬP NHẬT: injectPorts ---
+  // Khi bấm vào Marker -> Gọi luôn handleRouteSelection(..., false) để không tạo marker đỏ
   const injectPorts = (items) => {
     const js = `
       (function() {
@@ -170,8 +172,15 @@ const MapScreen = ({ navigation }) => {
             if (isNaN(lat) || isNaN(lng)) return;
             let name = getVal(item, ['name']) || 'Cảng';
             const popup = new maplibregl.Popup({ offset: 25, closeButton: false }).setHTML('<div style="padding:5px; font-weight:600">' + name + '</div>');
+            
             const marker = new maplibregl.Marker({ color: '#7B1FA2' }).setLngLat([lng, lat]).setPopup(popup).addTo(map);
-            marker.getElement().addEventListener('click', () => { window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'FACILITY_CLICK', facilityType: 'PORT', data: item })); });
+            
+            // SỬA Ở ĐÂY: Thêm sự kiện click, gọi trực tiếp hàm tìm đường, tham số cuối là false (không tạo marker đỏ)
+            marker.getElement().addEventListener('click', (e) => { 
+                 e.stopPropagation(); // Ngăn sự kiện click lan ra bản đồ
+                 window.handleRouteSelection(lat, lng, name, false); 
+            });
+            
             window.portMarkers.push(marker);
         });
       })();
@@ -179,6 +188,7 @@ const MapScreen = ({ navigation }) => {
     webviewRef.current?.injectJavaScript(js);
   };
 
+  // --- CẬP NHẬT: injectBoatyards ---
   const injectBoatyards = (items) => {
     const js = `
       (function() {
@@ -192,8 +202,15 @@ const MapScreen = ({ navigation }) => {
             if (isNaN(lat) || isNaN(lng)) return;
             let name = getVal(item, ['name']) || 'Xưởng';
             const popup = new maplibregl.Popup({ offset: 25, closeButton: false }).setHTML('<div style="padding:5px; font-weight:600">' + name + '</div>');
+            
             const marker = new maplibregl.Marker({ color: '#F57C00' }).setLngLat([lng, lat]).setPopup(popup).addTo(map);
-            marker.getElement().addEventListener('click', () => { window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'FACILITY_CLICK', facilityType: 'BOATYARD', data: item })); });
+            
+            // SỬA Ở ĐÂY: Gọi trực tiếp tìm đường
+            marker.getElement().addEventListener('click', (e) => { 
+                 e.stopPropagation(); 
+                 window.handleRouteSelection(lat, lng, name, false); 
+            });
+            
             window.boatyardMarkers.push(marker);
         });
       })();
@@ -210,12 +227,7 @@ const MapScreen = ({ navigation }) => {
           setRouteStats({ address: msg.address, car: msg.car, bike: msg.bike, walk: msg.walk });
           return;
       }
-      if (msg.type === 'FACILITY_CLICK') {
-          setRouteStats(null); 
-          const item = msg.data;
-          Alert.alert(msg.facilityType === 'PORT' ? '⚓ Cảng' : '🛠️ Xưởng', item.name);
-          return;
-      }
+      // Không còn cần FACILITY_CLICK nữa vì JS đã tự xử lý gọi đường đi
     } catch (e) {}
   };
 
@@ -342,9 +354,14 @@ const MapScreen = ({ navigation }) => {
              map.fitBounds(bounds, { padding: 80 });
           };
 
-          window.handleRouteSelection = async (lat, lng, address) => {
+          // SỬA: Thêm tham số createMarker (mặc định true)
+          window.handleRouteSelection = async (lat, lng, address, createMarker = true) => {
              if(window.searchMarker) window.searchMarker.remove();
-             window.searchMarker = new maplibregl.Marker({ color: '#EA4335' }).setLngLat([lng, lat]).addTo(map);
+             
+             // Chỉ tạo marker đỏ nếu createMarker là true
+             if (createMarker) {
+                 window.searchMarker = new maplibregl.Marker({ color: '#EA4335' }).setLngLat([lng, lat]).addTo(map);
+             }
 
              if(window.userLocation){
                  const dest = { lat: lat, lng: lng };
@@ -562,7 +579,6 @@ const styles = StyleSheet.create({
   uiContainer: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, paddingHorizontal: 16 },
   
   searchContainer: {
-    top:50,
       flexDirection: 'row', alignItems: 'center',
       backgroundColor: COLORS.bg,
       marginTop: Platform.OS === 'ios' ? 10 : 40,
@@ -573,7 +589,6 @@ const styles = StyleSheet.create({
   searchInput: { flex: 1, fontSize: 16, color: COLORS.textMain, marginLeft: 8 },
   
   suggestionsBox: {
-    top: 50,
       backgroundColor: COLORS.bg,
       borderRadius: 12,
       marginTop: 8,
@@ -589,7 +604,6 @@ const styles = StyleSheet.create({
 
   rightFloatingContainer: { alignItems: 'flex-end', marginTop: 12 },
   weatherBadge: {
-    top:60,
       flexDirection: 'row', alignItems: 'center',
       backgroundColor: 'rgba(255,255,255,0.95)',
       paddingHorizontal: 10, paddingVertical: 6,
@@ -598,7 +612,6 @@ const styles = StyleSheet.create({
   },
   weatherText: { fontSize: 16, fontWeight: '700', color: COLORS.textMain, marginLeft: 4 },
   legendBadge: {
-    top:70,
       backgroundColor: 'rgba(255,255,255,0.95)',
       padding: 10, borderRadius: 12,
       elevation: 3, shadowOpacity: 0.1, shadowRadius: 3
@@ -641,6 +654,7 @@ const styles = StyleSheet.create({
   btnStartText: { color: '#FFF', fontSize: 16, fontWeight: '700', letterSpacing: 0.5 },
 
   navHeaderCard: {
+    top: 40,
       flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
       backgroundColor: '#202124', 
       marginTop: Platform.OS === 'ios' ? 10 : 40,
