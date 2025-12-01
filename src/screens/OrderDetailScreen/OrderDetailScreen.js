@@ -44,7 +44,7 @@ const formatCurrency = (amount) => {
 const getStatusConfig = (status) => {
   switch (status) {
     case "Pending":
-      return { bg: "#FEFAE0", text: "#D69E2E", label: "Chờ xử lý", icon: "time-outline" };
+           return { bg: "#FFF4E5", text: "#FF9800", label: "Chờ xử lý", icon: "time-outline" };
     case "Approved":
       return { bg: "#F0FFF4", text: "#38A169", label: "Đã duyệt", icon: "checkmark-circle-outline" };
     case "Rejected":

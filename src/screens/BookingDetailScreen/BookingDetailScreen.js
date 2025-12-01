@@ -31,7 +31,6 @@ const BookingDetailScreen = ({ route, navigation }) => {
   const [booking, setBooking] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Đã xóa state isProcessingPayment vì không cần xử lý ở đây nữa
 
   useEffect(() => {
     const fetchBookingDetail = async () => {
@@ -47,13 +46,11 @@ const BookingDetailScreen = ({ route, navigation }) => {
     fetchBookingDetail();
   }, [bookingId]);
 
-  // --- CẬP NHẬT: Hàm điều hướng sang CheckoutDockScreen ---
   const handlePayment = () => {
-    // Điều hướng sang màn hình Checkout và truyền dữ liệu booking đi kèm
     navigation.navigate("CheckoutDockScreen", {
       bookingId: booking.id,
       totalAmount: booking.totalAmount,
-      bookingData: booking, // Truyền cả object nếu bên kia cần hiển thị chi tiết
+      bookingData: booking, 
     });
   };
 
@@ -117,7 +114,6 @@ const BookingDetailScreen = ({ route, navigation }) => {
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor={COLORS.white} />
 
-      {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
           <Ionicons name="arrow-back" size={24} color={COLORS.darkText} />
@@ -158,7 +154,6 @@ const BookingDetailScreen = ({ route, navigation }) => {
           </View>
         </View>
 
-        {/* Section 2: Time & Location */}
         <View style={styles.sectionTitleContainer}>
           <Text style={styles.sectionTitle}>Thời gian & Địa điểm</Text>
         </View>
@@ -192,7 +187,6 @@ const BookingDetailScreen = ({ route, navigation }) => {
           </View>
         </View>
 
-        {/* Section 3: Services */}
         <View style={styles.sectionTitleContainer}>
           <Text style={styles.sectionTitle}>Dịch vụ sử dụng</Text>
         </View>
@@ -213,7 +207,6 @@ const BookingDetailScreen = ({ route, navigation }) => {
           )}
         </View>
 
-        {/* Section 4: Payment Summary */}
         <View style={styles.card}>
           <View style={styles.rowBetween}>
             <Text style={styles.totalLabel}>Tổng cộng</Text>
@@ -223,13 +216,11 @@ const BookingDetailScreen = ({ route, navigation }) => {
 
       </ScrollView>
 
-      {/* Footer Button: Chỉ hiện khi trạng thái là Pending */}
       {booking.status === "Pending" && (
         <View style={styles.footer}>
           <TouchableOpacity 
             style={styles.paymentBtn} 
             onPress={handlePayment}
-            // Đã xóa disabled={isProcessingPayment} vì chuyển trang ngay lập tức
           >
             <Text style={styles.paymentBtnText}>Thanh toán ngay</Text>
             <Ionicons name="card-outline" size={20} color="#fff" style={{marginLeft: 8}}/>

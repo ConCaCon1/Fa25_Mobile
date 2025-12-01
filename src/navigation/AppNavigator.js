@@ -1,5 +1,6 @@
 import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
+import SplashScreen from "../screens/SplashScreen/SplashScreen";
 import HomeScreen from "../screens/HomeScreen/HomeScreen";
 import RegisterScreen from "../screens/RegisterScreen/RegisterScreen";
 import LoginScreen from "../screens/LoginScreen/LoginScreen";
@@ -42,11 +43,12 @@ export default function AppNavigator() {
   return (
     <NavigationContainer>
       <Stack.Navigator
-        initialRouteName="LoginScreen"
+        initialRouteName="SplashScreen"
         screenOptions={{
-          headerShown: false, 
+          headerShown: false,
         }}
       >
+        <Stack.Screen name="SplashScreen" component={SplashScreen} />
         <Stack.Screen name="LoginScreen" component={LoginScreen} />
         <Stack.Screen name="Home" component={HomeScreen} />
         <Stack.Screen name="Register" component={RegisterScreen} />
@@ -62,7 +64,7 @@ export default function AppNavigator() {
         <Stack.Screen name="BoatyardsList" component={BoatyardsListScreen} />
         <Stack.Screen name="SupplierList" component={SupplierListScreen} />
         <Stack.Screen name="SupplierDetail" component={SupplierDetailScreen} />
-        <Stack.Screen name ="AddCaptainScreen" component={AddCaptainScreen} />
+        <Stack.Screen name="AddCaptainScreen" component={AddCaptainScreen} />
         <Stack.Screen name="ShipDetailScreen" component={ShipDetailScreen} />
         <Stack.Screen name="ProductListScreen" component={ProductListScreen} />
         <Stack.Screen name="ProductDetailScreen" component={ProductDetailScreen} />
@@ -76,7 +78,7 @@ export default function AppNavigator() {
         <Stack.Screen name="BookingScreen" component={BookingScreen} />
         <Stack.Screen name="SelectShipDockScreen" component={SelectShipDockScreen} />
         <Stack.Screen name="ConfirmBookingScreen" component={ConfirmBookingScreen} />
-        <Stack.Screen name= "BookingDetailScreen" component={BookingDetailScreen} />
+        <Stack.Screen name="BookingDetailScreen" component={BookingDetailScreen} />
         <Stack.Screen name="CheckoutDockScreen" component={CheckoutDockScreen} />
         <Stack.Screen name="BookingSuccessScreen" component={BookingSuccessScreen} />
         <Stack.Screen name="BookingFailScreen" component={BookingFailScreen} />
@@ -88,7 +90,6 @@ export default function AppNavigator() {
             </ProtectedCaptainRoute>
           )}
         />
-   
       </Stack.Navigator>
     </NavigationContainer>
   );

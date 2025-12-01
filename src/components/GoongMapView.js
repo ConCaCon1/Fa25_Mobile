@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { View, ActivityIndicator, StyleSheet } from "react-native";
 import { WebView } from "react-native-webview";
 import { VITE_GOONG_MAP_KEY } from "@env";
@@ -15,17 +15,19 @@ const GoongMapView = ({
 }) => {
   const [portsData, setPortsData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const webViewRef = useRef(null);
+  const animationId = useRef(null); // để hủy animation khi unmount
 
   useEffect(() => {
     const fetchPorts = async () => {
       try {
         setLoading(true);
-        const res = await apiGet("/ports");
+        const res = await apiGet("/ports?page=1&size=200");
         if (res.status === 200 && res.data?.items) {
           setPortsData(res.data.items);
         }
       } catch (err) {
-        console.warn(err);
+        console.warn("Lỗi tải cảng:", err);
       } finally {
         setLoading(false);
       }
@@ -33,10 +35,7 @@ const GoongMapView = ({
     fetchPorts();
   }, []);
 
-  const safePorts = portsData
-    ? JSON.stringify(portsData).replace(/'/g, "\\'")
-    : "[]";
-
+  // Tạo HTML với animation CHỈ dành riêng cho tàu
   const html = `
 <!DOCTYPE html>
 <html>
@@ -47,107 +46,138 @@ const GoongMapView = ({
   <script src="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.js"></script>
   <style>
     body,html,#map{margin:0;padding:0;height:100%;overflow:hidden;border-radius:${borderRadius}px}
-    .ship{font-size:${markerSize}px;transform:translate(-50%,-100%);filter:drop-shadow(0 5px 10px rgba(0,0,0,0.6))}
-    .port{font-size:34px;transform:translate(-50%,-100%)}
-    .maplibregl-popup-content{font-family:system-ui;padding:10px 15px;border-radius:12px;background:#fff;box-shadow:0 6px 20px rgba(0,0,0,0.25);text-align:center}
-    .maplibregl-popup-close-button{display:none}
+    .ship-marker {
+      font-size: ${markerSize}px;
+      cursor: pointer;
+      filter: drop-shadow(0 4px 8px rgba(0,0,0,0.5));
+    }
+    .port-marker {
+      font-size: 34px;
+      transform: translate(-50%, -100%);
+    }
+    .maplibregl-popup-content {
+      font-family: system-ui, -apple-system, sans-serif;
+      padding: 10px 15px;
+      border-radius: 12px;
+      background: rgba(0,0,0,0.85);
+      color: white;
+      font-weight: 600;
+      text-align: center;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+    }
+    .maplibregl-popup-close-button { display: none; }
+    .maplibregl-popup-tip { border-top-color: rgba(0,0,0,0.85) !important; }
   </style>
 </head>
 <body>
 <div id="map"></div>
 
 <script>
-  // Biến toàn cục
-  let map, shipMarker;
-  let angle = 0; // để tàu xoay theo hướng di chuyển (đẹp hơn)
+  let map, shipMarker, animationFrame;
+  const ports = ${portsData ? JSON.stringify(portsData) : "[]"};
 
-  const ports = ${safePorts};
-
-  // Tạo tàu ngay từ đầu
+  // Tạo phần tử tàu
   const shipEl = document.createElement('div');
-  shipEl.className = 'ship';
+  shipEl.className = 'ship-marker';
   shipEl.innerText = '${icon}';
 
-  const shipPopup = new maplibregl.Popup({offset:40, closeOnClick:false, closeButton:false})
-    .setText('${popupText.replace(/'/g, "\\'")}');
+  const shipPopup = new maplibregl.Popup({
+    offset: 40,
+    closeOnClick: false,
+    closeButton: false
+  }).setText('${popupText.replace(/'/g, "\\'")}');
 
   // Khởi tạo map
   map = new maplibregl.Map({
     container: 'map',
     style: 'https://tiles.goong.io/assets/goong_map_web.json?api_key=${VITE_GOONG_MAP_KEY}',
     center: [${longitude}, ${latitude}],
-    zoom: ${zoom}
+    zoom: ${zoom},
+    interactive: true
   });
 
   map.addControl(new maplibregl.NavigationControl(), 'top-right');
 
-  // TẠO TÀU NGAY KHI MAP SẴN SÀNG (không đợi 'load')
-  map.on('styledata', () => {
-    if (shipMarker) return;
-
-    shipMarker = new maplibregl.Marker({element: shipEl})
+  // Tạo tàu ngay khi map sẵn sàng
+  map.on('load', () => {
+    // Tạo marker tàu
+    shipMarker = new maplibregl.Marker({
+      element: shipEl,
+      anchor: 'bottom'
+    })
       .setLngLat([${longitude}, ${latitude}])
       .setPopup(shipPopup)
       .addTo(map);
-    shipMarker.togglePopup();
 
-    // Thêm các cảng
+    shipMarker.togglePopup(); // luôn hiển thị popup
+
+    // Tạo các cảng (ĐỨNG YÊN)
     ports.forEach(p => {
       if (!p.latitude || !p.longitude) return;
       const el = document.createElement('div');
-      el.className = 'port';
+      el.className = 'port-marker';
       el.innerText = '⚓';
-      new maplibregl.Marker({element: el})
+      new maplibregl.Marker({ element: el })
         .setLngLat([parseFloat(p.longitude), parseFloat(p.latitude)])
-        .setPopup(new maplibregl.Popup({offset:30,closeButton:false})
-          .setHTML('<strong>'+(p.name||'Cảng')+'</strong><br><small>'+(p.city||'')+', '+(p.country||'')+'</small>'))
+        .setPopup(new maplibregl.Popup({ offset: 30, closeButton: false })
+          .setHTML('<strong>' + (p.name || 'Cảng') + '</strong><br><small>' + 
+                   (p.city ? p.city + ', ' : '') + (p.country || '') + '</small>'))
         .addTo(map);
     });
+
+    // BẮT ĐẦU DI CHUYỂN TÀU (chỉ tàu thôi!)
+    startShipAnimation();
   });
 
-  // DI CHUYỂN LIÊN TỤC – KHÔNG DÙNG 'load', 'render' gì cả
-  // Dùng setInterval + tính toán vị trí theo thời gian thực
-  let startTime = Date.now();
-
-  function moveShip() {
-    const elapsed = (Date.now() - startTime) / 1000; // giây
-    const speed = 0.02; // độ/giây (tùy chỉnh tốc độ)
-    
-    // Di chuyển theo hình sin + cos → đường tròn đẹp
+  // Hàm animation MƯỢT MÀ, CHỈ CHO TÀU
+  function startShipAnimation() {
     const centerLng = ${longitude};
     const centerLat = ${latitude};
-    const radius = 0.05; // bán kính vòng tròn
+    const radius = 0.04; // bán kính vòng tròn
+    const speed = 0.015; // tốc độ quay
+    let startTime = Date.now();
 
-    const lng = centerLng + radius * Math.cos(elapsed * speed);
-    const lat = centerLat + radius * Math.sin(elapsed * speed * 0.7); // hơi elip cho đẹp
+    function animate() {
+      const elapsed = (Date.now() - startTime) / 1000;
+      const angle = elapsed * speed;
 
-    shipMarker.setLngLat([lng, lat]);
+      const lng = centerLng + radius * Math.cos(angle);
+      const lat = centerLat + radius * Math.sin(angle * 0.8); // hơi elip cho tự nhiên
 
-    // Xoay tàu theo hướng di chuyển (tùy chọn, rất đẹp)
-    angle = (angle + 2) % 360;
-    shipEl.style.transform = 'translate(-50%, -100%) rotate(' + angle + 'deg)';
+      // Di chuyển tàu
+      if (shipMarker) {
+        shipMarker.setLngLat([lng, lat]);
+      }
 
-    requestAnimationFrame(moveShip);
+      // Xoay tàu theo hướng di chuyển (rất đẹp!)
+      const rotateAngle = (angle * 180 / Math.PI) + 90; // +90 để mũi tàu hướng đúng
+      shipEl.style.transform = 'translate(-50%, -100%) rotate(' + rotateAngle + 'deg)';
+
+      animationFrame = requestAnimationFrame(animate);
+    }
+
+    animate();
   }
 
-  // Bắt đầu di chuyển ngay khi có thể
-  setTimeout(moveShip, 1000);
-
-  // Fallback cực mạnh: nếu 8s vẫn chưa có marker → ép tạo
-  setTimeout(() => {
-    if (!shipMarker && map) {
-      shipMarker = new maplibregl.Marker({element: shipEl})
-        .setLngLat([${longitude}, ${latitude}])
-        .setPopup(shipPopup)
-        .addTo(map);
-      shipMarker.togglePopup();
-      moveShip();
-    }
-  }, 8000);
+  // Dọn dẹp khi component unmount (rất quan trọng!)
+  window.cleanupShipAnimation = () => {
+    if (animationFrame) cancelAnimationFrame(animationFrame);
+    if (shipMarker) shipMarker.remove();
+  };
 </script>
 </body>
 </html>
 `;
+
+  // Dọn dẹp animation khi component unmount
+  useEffect(() => {
+    return () => {
+      // Gọi hàm dọn dẹp trong WebView
+      webViewRef.current?.injectJavaScript(`
+        if (window.cleanupShipAnimation) window.cleanupShipAnimation();
+      `);
+    };
+  }, []);
 
   return (
     <View style={[styles.card, { borderRadius }]}>
@@ -157,14 +187,19 @@ const GoongMapView = ({
         </View>
       ) : (
         <WebView
+          ref={webViewRef}
           source={{ html }}
           javaScriptEnabled={true}
           domStorageEnabled={true}
           originWhitelist={["*"]}
-          style={{ flex: 1 }}
+          style={{ flex: 1, backgroundColor: '#f0f0f0' }}
           scrollEnabled={false}
           bounces={false}
           scalesPageToFit={false}
+          onError={(syntheticEvent) => {
+            const { nativeEvent } = syntheticEvent;
+            console.warn('WebView error: ', nativeEvent);
+          }}
         />
       )}
     </View>

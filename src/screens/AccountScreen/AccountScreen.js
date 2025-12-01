@@ -8,45 +8,76 @@ import {
   StatusBar,
   Alert,
   ActivityIndicator,
+  Animated,
 } from "react-native";
-import { Ionicons, MaterialIcons } from "@expo/vector-icons";
-import { SafeAreaView } from "react-native-safe-area-context";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import { Ionicons, MaterialIcons, FontAwesome5 } from "@expo/vector-icons";
+import { SwipeListView } from "react-native-swipe-list-view";
+import { LinearGradient } from 'expo-linear-gradient';
+
 import BottomNavBar from "../../components/BottomNavBar";
 import { apiGet, apiPatch } from "../../ultis/api";
 import { useIsFocused } from "@react-navigation/native";
-import { SwipeListView } from "react-native-swipe-list-view";
+import { clearAllData } from "../../auth/authStorage";
 
-import { getUsername, clearAllData } from "../../auth/authStorage"; 
+const COLORS = {
+  primary: "#0A2540",
+  secondary: "#00A8E8",
+  accent: "#FF6B6B", 
+  bg: "#F8F9FA",
+  white: "#FFFFFF",
+  textMain: "#1A202C",
+  textSub: "#718096",
+  cardBg: "#FFFFFF",
+  success: "#48BB78",
+};
 
 const AccountScreen = ({ navigation }) => {
   const [ships, setShips] = useState([]);
   const [loading, setLoading] = useState(false);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
-  const [userName, setUserName] = useState("User"); 
-  const [isDataLoading, setIsDataLoading] = useState(true); 
+  
   const [profile, setProfile] = useState(null);
+  const [isDataLoading, setIsDataLoading] = useState(true);
+  
+  const [stats, setStats] = useState({ orders: 0, bookings: 0 });
+  
   const isFocused = useIsFocused();
 
   useEffect(() => {
-    const loadProfileData = async () => {
+    const loadAllData = async () => {
+      setIsDataLoading(true);
       try {
-        const res = await apiGet("/auth/profile");
-        if (res.status === 200 && res.data) {
-          setProfile(res.data);
+        const [profileRes, ordersRes, bookingsRes] = await Promise.all([
+            apiGet("/auth/profile"),
+            apiGet("/orders?page=1&size=1"),
+            apiGet("/bookings?page=1&size=1")
+        ]);
+
+        if (profileRes.status === 200 && profileRes.data) {
+          setProfile(profileRes.data);
         }
+
+        setStats({
+            orders: ordersRes?.data?.total || 0,
+            bookings: bookingsRes?.data?.total || 0
+        });
+
       } catch (error) {
-        setProfile(null);
+        console.log("Error loading account data:", error);
+      } finally {
+        setIsDataLoading(false);
       }
-      setIsDataLoading(false);
+
       setShips([]);
       setPage(1);
       setHasMore(true);
       fetchShips(1, true);
     };
 
-    loadProfileData();
+    if (isFocused) {
+        loadAllData();
+    }
   }, [isFocused]);
 
   const fetchShips = async (pageNum = 1, reset = false) => {
@@ -59,14 +90,11 @@ const AccountScreen = ({ navigation }) => {
 
       setShips((prev) => {
         const merged = reset ? newShips : [...prev, ...newShips];
-        const uniqueShips = merged.filter(
-          (v, i, a) => a.findIndex((t) => t.id === v.id) === i
-        );
+        const uniqueShips = merged.filter((v, i, a) => a.findIndex((t) => t.id === v.id) === i);
         if (newShips.length < 5) setHasMore(false);
         return uniqueShips;
       });
     } catch (err) {
-      console.log("❌ Error fetching ships:", err);
       setShips([]);
     } finally {
       setLoading(false);
@@ -81,41 +109,32 @@ const AccountScreen = ({ navigation }) => {
     }
   };
 
-  const handleLogout = async () => {
-    Alert.alert("Logout", "Bạn có chắc chắn muốn đăng xuất?", [
-      { text: "Hủy", style: "cancel" },
+  const handleLogout = () => {
+    Alert.alert("Đăng xuất", "Bạn muốn đăng xuất ngay?", [
+      { text: "Không", style: "cancel" },
       {
-        text: "Đăng xuất",
+        text: "Đồng ý",
         style: "destructive",
         onPress: async () => {
-          try {
-            await clearAllData(); 
-            navigation.reset({
-              index: 0,
-              routes: [{ name: "LoginScreen" }],
-            });
-          } catch (error) {
-            console.log("Logout failed:", error);
-          }
+          await clearAllData();
+          navigation.reset({ index: 0, routes: [{ name: "LoginScreen" }] });
         },
       },
     ]);
   };
 
-  const handleDeleteShip = async (shipId) => {
-    Alert.alert("Xác nhận", "Bạn có chắc chắn muốn xóa tàu này không?", [
+  const handleDeleteShip = (shipId) => {
+    Alert.alert("Xóa tàu", "Hành động này không thể hoàn tác.", [
       { text: "Hủy", style: "cancel" },
       {
-        text: "Xóa",
+        text: "Xóa ngay",
         style: "destructive",
         onPress: async () => {
           try {
             await apiPatch(`/ships/${shipId}`, { deleted: true });
             setShips((prev) => prev.filter((s) => s.id !== shipId));
-            Alert.alert("✅ Thành công", "Đã xóa tàu thành công!");
           } catch (error) {
-            console.error("❌ Lỗi xóa tàu:", error);
-            Alert.alert("❌ Thất bại", "Không thể xóa tàu. Thử lại sau.");
+            Alert.alert("Lỗi", "Không thể xóa tàu.");
           }
         },
       },
@@ -128,282 +147,253 @@ const AccountScreen = ({ navigation }) => {
         style={styles.deleteButton}
         onPress={() => handleDeleteShip(data.item.id)}
       >
-        <Ionicons name="trash-outline" size={24} color="#fff" />
-        <Text style={styles.deleteText}>Delete</Text>
+        <Ionicons name="trash" size={24} color="#FFF" />
       </TouchableOpacity>
     </View>
   );
 
   const ShipCard = ({ ship }) => (
-    <View style={styles.card}>
+    <View style={styles.cardContainer}>
       <TouchableOpacity
-        style={{ flex: 1 }}
-        onPress={() =>
-          navigation.navigate("ShipDetailScreen", {
-            shipId: ship.id,
-          })
-        }
+        activeOpacity={0.9}
+        onPress={() => navigation.navigate("ShipDetailScreen", { shipId: ship.id })}
+        style={styles.cardContent}
       >
-        <View style={styles.cardHeader}>
-          <Image
-            source={{
-              uri: "https://png.pngtree.com/png-vector/20250728/ourlarge/pngtree-vintage-trawler-fishing-boat-vector-icon-element-png-image_16880913.webp",
-            }}
-            style={styles.cardAvatar}
-          />
-          <View style={{ flex: 1 }}>
-            <Text style={styles.cardTitle}>{ship.name}</Text>
-            <Text style={styles.cardSubtitle}>
-              IMO: {ship.imoNumber || "N/A"}
-            </Text>
-          </View>
-          <TouchableOpacity
-            onPress={() =>
-              navigation.navigate("ShipMapScreen", {
-                name: ship.name,
-                latitude: parseFloat(ship.latitude),
-                longitude: parseFloat(ship.longitude),
-              })
-            }
-          >
-            <Ionicons name="map-outline" size={20} color="#003d66" />
-          </TouchableOpacity>
+        <View style={styles.shipImageContainer}>
+            <Image
+                source={{ uri: "https://png.pngtree.com/png-vector/20250728/ourlarge/pngtree-vintage-trawler-fishing-boat-vector-icon-element-png-image_16880913.webp" }}
+                style={styles.shipImage}
+            />
+            <View style={styles.statusBadge}>
+                <Text style={styles.statusText}>Active</Text>
+            </View>
         </View>
-        <View style={styles.infoGroup}>
-          <View style={styles.infoRow}>
-            <MaterialIcons name="local-activity" size={16} color="#003d66" />
-            <Text style={styles.cardInfoText}>
-              Register No: {ship.registerNo}
-            </Text>
-          </View>
-          <View style={styles.infoRow}>
-            <MaterialIcons name="business" size={16} color="#003d66" />
-            <Text style={styles.cardInfoText}>
-              Build Year: {ship.buildYear}
-            </Text>
-          </View>
-          <View style={styles.infoRow}>
-            <Ionicons name="navigate-outline" size={16} color="#003d66" />
-            <Text style={styles.cardInfoText}>
-              Pos:{" "}
-              {ship.latitude && ship.longitude
-                ? `${parseFloat(ship.latitude).toFixed(3)}, ${parseFloat(
-                    ship.longitude
-                  ).toFixed(3)}`
-                : "Unknown"}
-            </Text>
-          </View>
+
+        <View style={styles.shipInfo}>
+            <View style={{flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center'}}>
+                <Text style={styles.shipName} numberOfLines={1}>{ship.name}</Text>
+                <TouchableOpacity onPress={() => navigation.navigate("ShipMapScreen", { name: ship.name, latitude: parseFloat(ship.latitude), longitude: parseFloat(ship.longitude) })}>
+                    <Ionicons name="location-sharp" size={20} color={COLORS.secondary} />
+                </TouchableOpacity>
+            </View>
+            <Text style={styles.shipSubText}>IMO: {ship.imoNumber || "N/A"}</Text>
+            <View style={styles.divider} />
+            <View style={styles.detailRow}>
+                <View style={styles.detailItem}>
+                    <MaterialIcons name="app-registration" size={14} color={COLORS.textSub} />
+                    <Text style={styles.detailText}>{ship.registerNo}</Text>
+                </View>
+              
+                <View style={styles.detailItem}>
+                    <Ionicons name="calendar-outline" size={14} color={COLORS.textSub} />
+                    <Text style={styles.detailText}>{ship.buildYear}</Text>
+                </View>
+            </View>
         </View>
       </TouchableOpacity>
     </View>
   );
 
+  const ProfileHeader = () => (
+    <LinearGradient
+        colors={[COLORS.primary, '#1a3b5c']}
+        start={{x: 0, y: 0}} end={{x: 1, y: 1}}
+        style={styles.headerGradient}
+    >
+        <View style={styles.headerContent}>
+            <View style={styles.avatarWrapper}>
+                <Image
+                    source={{ uri: profile?.avatarUrl || "https://i.pravatar.cc/300" }}
+                    style={styles.avatarImage}
+                />
+                <TouchableOpacity style={styles.editAvatarBtn}>
+                    <Ionicons name="camera" size={14} color="#FFF" />
+                </TouchableOpacity>
+            </View>
+            
+            <View style={styles.headerTextContainer}>
+                <Text style={styles.profileName}>{profile?.fullName || "Thuyền Viên"}</Text>
+                <Text style={styles.profileRole}>Captain / Ship Owner</Text>
+                <View style={styles.contactRow}>
+                    <Ionicons name="call" size={12} color="#A0AEC0" />
+                    <Text style={styles.contactText}>{profile?.phoneNumber || "No phone number"}</Text>
+                </View>
+            </View>
+
+            <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
+                <Ionicons name="log-out-outline" size={24} color="#FFF" />
+            </TouchableOpacity>
+        </View>
+
+        <View style={styles.statsContainer}>
+            <View style={styles.statItem}>
+                <Text style={styles.statNumber}>{ships.length}</Text>
+                <Text style={styles.statLabel}>Tàu</Text>
+            </View>
+            
+            <View style={styles.statDivider} />
+            
+            <TouchableOpacity style={styles.statItem} onPress={() => navigation.navigate("OrderScreen")}>
+                <Text style={styles.statNumber}>{stats.orders}</Text>
+                <Text style={styles.statLabel}>Đơn hàng</Text>
+            </TouchableOpacity>
+            
+            <View style={styles.statDivider} />
+            
+            <TouchableOpacity style={styles.statItem} onPress={() => navigation.navigate("History")}>
+                <Text style={styles.statNumber}>{stats.bookings}</Text>
+                <Text style={styles.statLabel}>Lịch hẹn</Text>
+            </TouchableOpacity>
+        </View>
+    </LinearGradient>
+  );
+
   if (isDataLoading) {
     return (
-      <View style={styles.centerBox}>
-        <ActivityIndicator size="large" color="#003d66" />
-        <Text style={{ marginTop: 10 }}>Loading profile...</Text>
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color={COLORS.primary} />
       </View>
     );
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" />
-      <View style={styles.bannerContainer}>
-        <Image
-          source={{
-            uri: "https://images.unsplash.com/photo-1501785888041-af3ef285b470?auto=format&fit=crop&w=900&q=60",
-          }}
-          style={styles.bannerImage}
-        />
-        <TouchableOpacity style={styles.settingButton} onPress={handleLogout}>
-          <Ionicons name="settings-outline" size={22} color="#1C2A3A" />
-        </TouchableOpacity>
-      </View>
+    <View style={styles.container}>
+      <StatusBar barStyle="light-content" backgroundColor={COLORS.primary} />
+      
+      <ProfileHeader />
 
-      <View style={styles.profileSection}>
-        <Image
-          source={{ uri: profile?.avatarUrl || "https://i.pravatar.cc/300" }}
-          style={styles.avatar}
-        />
-        <View style={styles.profileInfoContainer}>
-          <Text style={styles.name}>{profile?.fullName || userName}</Text>
-          <TouchableOpacity style={styles.editButton}>
-            <MaterialIcons name="edit" size={16} color="#003d66" />
-            <Text style={styles.editText}>Edit Profile</Text>
-          </TouchableOpacity>
-          <Text style={styles.interests}>
-            {profile?.address || "Vessel Management · Logistics · Cargo"}
-          </Text>
-          <Text style={{ color: "#718096", fontSize: 13 }}>
-            {profile?.phoneNumber}
-          </Text>
-        </View>
-      </View>
-
-      <View style={styles.listContainer}>
-        <SwipeListView
-          data={ships || []}
-          keyExtractor={(item, index) => `${item.id || index}-${index}`}
-          renderItem={({ item }) => <ShipCard ship={item} />}
-          renderHiddenItem={renderHiddenItem}
-          rightOpenValue={-80}
-          disableRightSwipe={true}
-          onEndReached={loadMoreShips}
-          onEndReachedThreshold={0.3}
-          ListHeaderComponent={
-            <View style={styles.listHeaderContainer}>
-              <Text style={styles.listHeaderTitle}>My Ships</Text>
-              <TouchableOpacity
-                style={styles.addButton}
-                onPress={() => navigation.navigate("AddShipScreen")}
-              >
-                <Ionicons name="add" size={18} color="#005691" />
-                <Text style={styles.addButtonText}>Add Ship</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.addButton}
-                onPress={() => navigation.navigate("AddCaptainScreen")}
-              >
-                <Ionicons name="add" size={18} color="#005691" />
-                <Text style={styles.addButtonText}>Add Captain</Text>
-              </TouchableOpacity>
+      <View style={styles.bodyContainer}>
+        <View style={styles.listHeader}>
+            <Text style={styles.sectionTitle}>Đội tàu của tôi</Text>
+            <View style={{flexDirection: 'row'}}>
+                <TouchableOpacity style={styles.iconBtn} onPress={() => navigation.navigate("AddCaptainScreen")}>
+                    <Ionicons name="person-add" size={20} color={COLORS.primary} />
+                </TouchableOpacity>
+                <TouchableOpacity style={[styles.iconBtn, {marginLeft: 10}]} onPress={() => navigation.navigate("AddShipScreen")}>
+                    <Ionicons name="add-circle" size={20} color={COLORS.primary} />
+                </TouchableOpacity>
             </View>
-          }
-          ListEmptyComponent={
-            !loading && (
-              <Text style={{ textAlign: "center", marginTop: 30 }}>
-                No ships found 🚢
-              </Text>
-            )
-          }
-          ListFooterComponent={
-            loading && (
-              <ActivityIndicator
-                size="small"
-                color="#003d66"
-                style={{ marginVertical: 20 }}
-              />
-            )
-          }
+        </View>
+
+        <SwipeListView
+            data={ships}
+            keyExtractor={(item) => item.id}
+            renderItem={({ item }) => <ShipCard ship={item} />}
+            renderHiddenItem={renderHiddenItem}
+            rightOpenValue={-75}
+            disableRightSwipe
+            contentContainerStyle={{ paddingBottom: 100, paddingHorizontal: 20 }}
+            showsVerticalScrollIndicator={false}
+            onEndReached={loadMoreShips}
+            onEndReachedThreshold={0.5}
+            ListEmptyComponent={
+                !loading && (
+                    <View style={styles.emptyState}>
+                        <Image 
+                            source={{ uri: "https://cdn-icons-png.flaticon.com/512/7486/7486744.png" }} 
+                            style={{ width: 100, height: 100, opacity: 0.5, marginBottom: 10 }}
+                        />
+                        <Text style={{ color: COLORS.textSub }}>Bạn chưa có tàu nào.</Text>
+                    </View>
+                )
+            }
+            ListFooterComponent={loading && <ActivityIndicator style={{ margin: 20 }} color={COLORS.primary} />}
         />
       </View>
 
       <BottomNavBar activeScreen="Account" navigation={navigation} />
-    </SafeAreaView>
+    </View>
   );
 };
 
 export default AccountScreen;
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#F7FAFC" },
-  bannerContainer: { position: "relative", height: 180 },
-  bannerImage: {
-    width: "100%",
-    height: "100%",
-    borderBottomLeftRadius: 25,
-    borderBottomRightRadius: 25,
+  container: { flex: 1, backgroundColor: COLORS.bg },
+  loadingContainer: { flex: 1, justifyContent: "center", alignItems: "center" },
+
+  headerGradient: {
+    paddingTop: 50,
+    paddingBottom: 25,
+    paddingHorizontal: 20,
+    borderBottomLeftRadius: 30,
+    borderBottomRightRadius: 30,
+    shadowColor: "#0A2540",
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.3,
+    shadowRadius: 20,
+    elevation: 10,
+    zIndex: 10,
   },
-  settingButton: {
-    position: "absolute",
-    top: 15,
-    right: 15,
-    backgroundColor: "#fff",
-    padding: 8,
-    borderRadius: 25,
-    elevation: 4,
-  },
-  profileSection: {
+  headerContent: {
     flexDirection: "row",
     alignItems: "center",
-    marginTop: -40,
-    marginHorizontal: 20,
-    backgroundColor: "#FFFFFF",
-    borderRadius: 16,
-    padding: 15,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.08,
-    shadowRadius: 6,
-    elevation: 4,
+    marginBottom: 20,
   },
-  avatar: { width: 70, height: 70, borderRadius: 50, marginRight: 15 },
-  profileInfoContainer: { flex: 1 },
-  name: { fontSize: 20, fontWeight: "bold", color: "#1A202C" },
-  editButton: { flexDirection: "row", alignItems: "center", marginTop: 4 },
-  editText: { color: "#003d66", marginLeft: 5 },
-  interests: { color: "#718096", fontSize: 13, marginTop: 4 },
-  tabRow: {
-    flexDirection: "row",
-    justifyContent: "center",
-    marginTop: 15,
-    marginBottom: 8,
+  avatarWrapper: { position: 'relative' },
+  avatarImage: {
+    width: 70, height: 70, borderRadius: 35, borderWidth: 3, borderColor: "rgba(255,255,255,0.3)",
   },
-  tabButton: {
-    paddingVertical: 8,
-    paddingHorizontal: 25,
-    borderRadius: 20,
-    backgroundColor: "#E2E8F0",
-    marginHorizontal: 5,
+  editAvatarBtn: {
+    position: 'absolute', bottom: 0, right: 0,
+    backgroundColor: COLORS.secondary, padding: 4, borderRadius: 12, borderWidth: 2, borderColor: COLORS.primary,
   },
-  activeTabButton: { backgroundColor: "#003d66" },
-  tabText: { color: "#1A202C", fontWeight: "bold" },
-  activeTabText: { color: "#FFFFFF" },
-  listContainer: { flex: 1, paddingHorizontal: 15 },
-  listHeaderContainer: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginVertical: 10,
+  headerTextContainer: { flex: 1, marginLeft: 15 },
+  profileName: { fontSize: 20, fontWeight: "bold", color: COLORS.white },
+  profileRole: { fontSize: 13, color: "#A0AEC0", marginTop: 2 },
+  contactRow: { flexDirection: 'row', alignItems: 'center', marginTop: 4 },
+  contactText: { color: "#A0AEC0", fontSize: 12, marginLeft: 4 },
+  logoutBtn: { padding: 8, backgroundColor: "rgba(255,255,255,0.1)", borderRadius: 12 },
+
+  statsContainer: {
+    flexDirection: 'row', justifyContent: 'space-between',
+    backgroundColor: "rgba(255,255,255,0.1)", borderRadius: 16,
+    paddingVertical: 12, paddingHorizontal: 20,
   },
-  listHeaderTitle: { fontSize: 18, fontWeight: "bold", color: "#1C2A3A" },
-  addButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#E6F0FA",
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 8,
+  statItem: { alignItems: 'center', flex: 1 },
+  statNumber: { fontSize: 18, fontWeight: "bold", color: COLORS.white },
+  statLabel: { fontSize: 11, color: "#CBD5E0", marginTop: 2 },
+  statDivider: { width: 1, backgroundColor: "rgba(255,255,255,0.2)", height: "80%", alignSelf: 'center' },
+
+  bodyContainer: { flex: 1, marginTop: 10 },
+  listHeader: {
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+    paddingHorizontal: 20, marginBottom: 15,
   },
-  addButtonText: { color: "#005691", marginLeft: 5, fontWeight: "600" },
-  card: {
-    backgroundColor: "#FFFFFF",
-    borderRadius: 12,
-    marginBottom: 15,
-    padding: 15,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 4,
-    elevation: 3,
+  sectionTitle: { fontSize: 18, fontWeight: "800", color: COLORS.primary },
+  iconBtn: {
+    backgroundColor: COLORS.white, padding: 8, borderRadius: 10,
+    elevation: 2, shadowColor: "#000", shadowOpacity: 0.1, shadowRadius: 3,
   },
-  cardHeader: { flexDirection: "row", alignItems: "center", marginBottom: 10 },
-  cardAvatar: { width: 50, height: 50, borderRadius: 25, marginRight: 10 },
-  cardTitle: { fontSize: 16, fontWeight: "bold", color: "#1A202C" },
-  cardSubtitle: { fontSize: 12, color: "#718096" },
-  infoGroup: { marginTop: 8 },
-  infoRow: { flexDirection: "row", alignItems: "center", marginTop: 5 },
-  cardInfoText: { marginLeft: 6, color: "#2D3748", fontSize: 13 },
+
+  cardContainer: {
+    marginBottom: 16, borderRadius: 16, backgroundColor: COLORS.cardBg,
+    shadowColor: "#000", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.08, shadowRadius: 8, elevation: 3,
+    marginHorizontal: 2,
+  },
+  cardContent: { flexDirection: 'row', padding: 12 },
+  shipImageContainer: { position: 'relative' },
+  shipImage: { width: 80, height: 80, borderRadius: 12, backgroundColor: '#EDF2F7' },
+  statusBadge: {
+    position: 'absolute', top: 6, left: 6,
+    backgroundColor: 'rgba(72, 187, 120, 0.9)', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4,
+  },
+  statusText: { color: '#FFF', fontSize: 8, fontWeight: 'bold' },
+  shipInfo: { flex: 1, marginLeft: 14, justifyContent: 'center' },
+  shipName: { fontSize: 16, fontWeight: "700", color: COLORS.textMain, flex: 1, marginRight: 8 },
+  shipSubText: { fontSize: 12, color: COLORS.textSub, marginBottom: 8 },
+  divider: { height: 1, backgroundColor: "#EDF2F7", marginVertical: 6 },
+  detailRow: { flexDirection: 'row', justifyContent: 'space-between' },
+  detailItem: { flexDirection: 'row', alignItems: 'center' },
+  detailText: { fontSize: 11, color: COLORS.textSub, marginLeft: 4, fontWeight: '500' },
+
   rowBack: {
-    alignItems: "center",
-    backgroundColor: "#F7FAFC",
-    flex: 1,
-    flexDirection: "row",
-    justifyContent: "flex-end",
-    marginBottom: 15,
-    borderRadius: 12,
+    alignItems: "center", backgroundColor: "transparent", flex: 1,
+    flexDirection: "row", justifyContent: "flex-end", paddingLeft: 15, marginBottom: 16, borderRadius: 16,
   },
   deleteButton: {
-    backgroundColor: "#FF3B30",
-    justifyContent: "center",
-    alignItems: "center",
-    width: 80,
-    height: "100%",
-    borderTopRightRadius: 12,
-    borderBottomRightRadius: 12,
+    backgroundColor: COLORS.accent, justifyContent: "center", alignItems: "center",
+    width: 75, height: "100%", borderRadius: 16, marginRight: 2,
   },
-  deleteText: { color: "#fff", fontSize: 13, fontWeight: "600", marginTop: 2 },
-  centerBox: { flex: 1, justifyContent: "center", alignItems: "center" },
+  emptyState: { alignItems: 'center', marginTop: 50 }
 });

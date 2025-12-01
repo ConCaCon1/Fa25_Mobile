@@ -342,10 +342,7 @@ const ProductDetailScreen = ({ route, navigation }) => {
           <View style={styles.ratingRow}>
             <RenderStars rating={parseFloat(averageRating)} size={16} />
             <Text style={styles.ratingTextSmall}>{averageRating}/5 </Text>
-            <Text style={styles.soldText}>
-              {" "}
-              | Đã bán {reviews.length * 3 + 12}
-            </Text>
+      
           </View>
         </View>
 
