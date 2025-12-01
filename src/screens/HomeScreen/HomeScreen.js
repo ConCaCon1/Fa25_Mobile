@@ -243,7 +243,10 @@ const HomeScreen = ({ navigation }) => {
           <Text style={styles.greetingText}>Xin chào,</Text>
           <Text style={styles.userNameText}>{userName}</Text>
         </View>
-        <TouchableOpacity style={styles.avatarContainer}>
+        <TouchableOpacity
+          style={styles.avatarContainer}
+          onPress={() => navigation.navigate("Account")}
+        >
           <Image
             source={{ uri: avatarUrl || "https://i.pravatar.cc/300" }}
             style={styles.avatar}
@@ -492,7 +495,7 @@ const styles = StyleSheet.create({
     height: 36,
     justifyContent: "center",
     alignItems: "center",
-  }, 
+  },
   serviceItem: { alignItems: "center", marginRight: 20, width: 70 },
   serviceIconBox: {
     width: 60,

@@ -66,7 +66,7 @@ const HistoryScreen = ({ navigation }) => {
       case "Confirmed":
         return { color: COLORS.accent, text: "Đã thanh toán", icon: "check-circle" };
       case "Pending":
-        return { color: COLORS.warning, text: "Đang chờ xử lý", icon: "clock-outline" };
+        return { color: COLORS.warning, text: "Chờ thanh toán", icon: "clock-outline" };
       case "Canceled":
         return { color: COLORS.danger, text: "Đã hủy", icon: "close-circle" };
       default:
@@ -93,13 +93,11 @@ const HistoryScreen = ({ navigation }) => {
         onPress={() => navigation.navigate("BookingDetailScreen", { bookingId: item.id })}
         activeOpacity={0.9}
       >
-        {/* Header Card: Ảnh và Tên */}
         <View style={styles.cardHeader}>
           <Image source={{ uri: getPlaceholderImage() }} style={styles.image} />
           <View style={styles.headerInfo}>
             <View style={styles.rowBetween}>
               <Text style={styles.shipName} numberOfLines={1}>{item.shipName || "Thuyền #NoName"}</Text>
-              {/* Status Badge nhỏ gọn */}
               <View style={[styles.statusBadge, { backgroundColor: statusInfo.color + '20' }]}>
                 <MaterialCommunityIcons name={statusInfo.icon} size={12} color={statusInfo.color} />
                 <Text style={[styles.statusText, { color: statusInfo.color }]}>
@@ -118,11 +116,8 @@ const HistoryScreen = ({ navigation }) => {
             </View>
           </View>
         </View>
-
-        {/* Divider */}
         <View style={styles.dashedLine} />
 
-        {/* Footer Card: Thời gian */}
         <View style={styles.cardFooter}>
           <View style={styles.timeInfo}>
              <MaterialCommunityIcons name="calendar-blank" size={18} color={COLORS.primary} />
@@ -148,13 +143,11 @@ const HistoryScreen = ({ navigation }) => {
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor={COLORS.background} />
 
-      {/* HEADER */}
       <View style={styles.headerContainer}>
         <Text style={styles.headerTitle}>Lịch sử đặt chỗ</Text>
         <Text style={styles.headerSubtitle}>Quản lý các chuyến đi của bạn</Text>
       </View>
 
-      {/* CUSTOM TABS */}
       <View style={styles.tabWrapper}>
         <View style={styles.tabContainer}>
           {["Pending", "Confirmed", "Canceled"].map((tab) => (
@@ -164,14 +157,13 @@ const HistoryScreen = ({ navigation }) => {
               onPress={() => setActiveTab(tab)}
             >
               <Text style={[styles.tabText, activeTab === tab && styles.activeTabText]}>
-                {tab === "Pending" ? "Chờ xử lý" : tab === "Confirmed" ? "Đã xong" : "Đã hủy"}
+                {tab === "Pending" ? "Chờ thanh toán" : tab === "Confirmed" ? "Đã xong" : "Đã hủy"}
               </Text>
             </TouchableOpacity>
           ))}
         </View>
       </View>
 
-      {/* LIST CONTENT */}
       <ScrollView 
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
@@ -378,7 +370,6 @@ const styles = StyleSheet.create({
     color: COLORS.textDark,
   },
 
-  /* STATES */
   centerBox: {
     alignItems: "center",
     marginTop: 50,
