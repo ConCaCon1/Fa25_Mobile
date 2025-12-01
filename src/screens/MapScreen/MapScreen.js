@@ -579,6 +579,7 @@ const styles = StyleSheet.create({
   uiContainer: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, paddingHorizontal: 16 },
   
   searchContainer: {
+    top:50,
       flexDirection: 'row', alignItems: 'center',
       backgroundColor: COLORS.bg,
       marginTop: Platform.OS === 'ios' ? 10 : 40,
@@ -589,6 +590,7 @@ const styles = StyleSheet.create({
   searchInput: { flex: 1, fontSize: 16, color: COLORS.textMain, marginLeft: 8 },
   
   suggestionsBox: {
+    top: 50,
       backgroundColor: COLORS.bg,
       borderRadius: 12,
       marginTop: 8,
@@ -604,6 +606,7 @@ const styles = StyleSheet.create({
 
   rightFloatingContainer: { alignItems: 'flex-end', marginTop: 12 },
   weatherBadge: {
+    top: 55,
       flexDirection: 'row', alignItems: 'center',
       backgroundColor: 'rgba(255,255,255,0.95)',
       paddingHorizontal: 10, paddingVertical: 6,
@@ -612,6 +615,7 @@ const styles = StyleSheet.create({
   },
   weatherText: { fontSize: 16, fontWeight: '700', color: COLORS.textMain, marginLeft: 4 },
   legendBadge: {
+    top:60,
       backgroundColor: 'rgba(255,255,255,0.95)',
       padding: 10, borderRadius: 12,
       elevation: 3, shadowOpacity: 0.1, shadowRadius: 3
