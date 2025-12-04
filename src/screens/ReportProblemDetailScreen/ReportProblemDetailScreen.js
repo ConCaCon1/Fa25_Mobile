@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -9,58 +9,42 @@ import {
   StatusBar,
   Alert,
   Modal,
-  TouchableWithoutFeedback,
-} from "react-native";
-import { Ionicons, Feather, MaterialCommunityIcons } from "@expo/vector-icons";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { LinearGradient } from "expo-linear-gradient";
-import { apiGet, apiDelete, apiPatch } from "../../ultis/api";
+  TouchableWithoutFeedback
+} from 'react-native';
+import { Ionicons, Feather, MaterialCommunityIcons } from '@expo/vector-icons';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { LinearGradient } from 'expo-linear-gradient';
+import { apiGet, apiDelete, apiPatch } from '../../ultis/api';
 import { getUserData } from "../../auth/authStorage";
 
+// ... (Giữ nguyên các hằng số COLORS, STATUS_OPTIONS, và DetailRow như cũ)
 const COLORS = {
-  bg: "#F8FAFC",
-  white: "#FFFFFF",
-  textMain: "#1E293B",
-  textSub: "#64748B",
-  primary: "#0A2540",
-  secondary: "#00A8E8",
-  border: "#E2E8F0",
-  warning: "#F59E0B",
-  success: "#10B981",
-  danger: "#EF4444",
-  purple: "#8B5CF6",
-  cardShadow: "rgba(15, 23, 42, 0.08)",
-  gradientStart: "#0A2540",
-  gradientEnd: "#163E5C",
-  overlay: "rgba(0,0,0,0.5)",
+  bg: '#F8FAFC',
+  white: '#FFFFFF',
+  textMain: '#1E293B',
+  textSub: '#64748B',
+  primary: '#0A2540',
+  secondary: '#00A8E8',
+  border: '#E2E8F0',
+  warning: '#F59E0B',
+  success: '#10B981',
+  danger: '#DC2626',
+  purple: '#8B5CF6',
+  cardShadow: 'rgba(15, 23, 42, 0.08)',
+  gradientStart: '#0A2540',
+  gradientEnd: '#163E5C',
+  overlay: 'rgba(0,0,0,0.5)',
 };
 
 const STATUS_OPTIONS = [
   { key: "Pending", label: "Chờ xử lý", icon: "clock", color: COLORS.warning },
-  {
-    key: "Accepted",
-    label: "Đã tiếp nhận",
-    icon: "check-circle",
-    color: COLORS.secondary,
-  },
-  {
-    key: "Resolved",
-    label: "Đã giải quyết",
-    icon: "check-square",
-    color: COLORS.success,
-  },
+  { key: "Accepted", label: "Đã tiếp nhận", icon: "check-circle", color: COLORS.secondary },
+  { key: "Resolved", label: "Đã giải quyết", icon: "check-square", color: COLORS.success },
   { key: "Rejected", label: "Từ chối", icon: "x-circle", color: COLORS.danger },
 ];
 
-const DetailRow = ({
-  icon,
-  label,
-  value,
-  isMultiLine = false,
-  iconLibrary = "Feather",
-}) => {
-  const IconComponent =
-    iconLibrary === "MaterialCommunityIcons" ? MaterialCommunityIcons : Feather;
+const DetailRow = ({ icon, label, value, isMultiLine = false, iconLibrary = "Feather" }) => {
+  const IconComponent = iconLibrary === "MaterialCommunityIcons" ? MaterialCommunityIcons : Feather;
   return (
     <View style={styles.detailRow}>
       <View style={styles.iconBox}>
@@ -113,6 +97,12 @@ const ReportProblemDetailScreen = ({ route, navigation }) => {
   }, [id]);
 
   const handleDelete = () => {
+    // Kiểm tra lại lần nữa trước khi xóa cho chắc chắn
+    if (report.status !== 'Pending') {
+        Alert.alert("Không thể xóa", "Chỉ có thể xóa các báo cáo đang chờ xử lý.");
+        return;
+    }
+
     Alert.alert(
       "Xóa báo cáo",
       "Hành động này không thể hoàn tác. Bạn chắc chắn muốn xóa?",
@@ -127,7 +117,7 @@ const ReportProblemDetailScreen = ({ route, navigation }) => {
               const res = await apiDelete(`/report-problems/${id}`);
               if (res.status === 200 || res.status === 204 || res.success) {
                 Alert.alert("Đã xóa", "Báo cáo sự cố đã được xóa.", [
-                  { text: "OK", onPress: () => navigation.goBack() },
+                  { text: "OK", onPress: () => navigation.goBack() }
                 ]);
               } else {
                 Alert.alert("Lỗi", res.message || "Không thể xóa.");
@@ -146,11 +136,9 @@ const ReportProblemDetailScreen = ({ route, navigation }) => {
   const updateStatus = async (newStatus) => {
     setUpdatingStatus(true);
     try {
-      const res = await apiPatch(`/report-problems/${id}`, {
-        status: newStatus,
-      });
+      const res = await apiPatch(`/report-problems/${id}`, { status: newStatus });
       if (res.status === 200 || res.success) {
-        setReport((prev) => ({ ...prev, status: newStatus }));
+        setReport(prev => ({ ...prev, status: newStatus }));
         setShowStatusModal(false);
         Alert.alert("Thành công", "Đã cập nhật trạng thái.");
       } else {
@@ -164,10 +152,8 @@ const ReportProblemDetailScreen = ({ route, navigation }) => {
   };
 
   const getStatusInfo = (status) => {
-    const found = STATUS_OPTIONS.find((opt) => opt.key === status);
-    return (
-      found || { color: COLORS.textSub, label: status, icon: "help-circle" }
-    );
+    const found = STATUS_OPTIONS.find(opt => opt.key === status);
+    return found || { color: COLORS.textSub, label: status, icon: 'help-circle' };
   };
 
   if (loading) {
@@ -182,13 +168,8 @@ const ReportProblemDetailScreen = ({ route, navigation }) => {
     return (
       <View style={styles.loadingContainer}>
         <Feather name="alert-circle" size={50} color={COLORS.textSub} />
-        <Text style={{ color: COLORS.textSub, marginTop: 10 }}>
-          Không tìm thấy báo cáo.
-        </Text>
-        <TouchableOpacity
-          onPress={() => navigation.goBack()}
-          style={styles.errorButton}
-        >
+        <Text style={{ color: COLORS.textSub, marginTop: 10 }}>Không tìm thấy báo cáo.</Text>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.errorButton}>
           <Text style={styles.errorButtonText}>Quay lại</Text>
         </TouchableOpacity>
       </View>
@@ -199,144 +180,92 @@ const ReportProblemDetailScreen = ({ route, navigation }) => {
 
   return (
     <View style={styles.container}>
-      <StatusBar
-        barStyle="light-content"
-        backgroundColor={COLORS.gradientStart}
-      />
+      <StatusBar barStyle="light-content" backgroundColor={COLORS.gradientStart} />
 
       <LinearGradient
         colors={[COLORS.gradientStart, COLORS.gradientEnd]}
         style={styles.headerGradient}
       >
-        <SafeAreaView edges={["top"]}>
+        <SafeAreaView edges={['top']}>
           <View style={styles.headerContent}>
-            <TouchableOpacity
-              onPress={() => navigation.goBack()}
-              style={styles.iconBtn}
-            >
+            <TouchableOpacity onPress={() => navigation.goBack()} style={styles.iconBtn}>
               <Ionicons name="arrow-back" size={24} color={COLORS.white} />
             </TouchableOpacity>
-            <Text style={styles.headerTitle} numberOfLines={1}>
-              Chi tiết sự cố
-            </Text>
-
-            {userRole === "Captain" ? (
-              !deleting ? (
-                <TouchableOpacity
-                  onPress={handleDelete}
-                  style={[styles.iconBtn, styles.deleteHeaderBtn]}
-                >
+            <Text style={styles.headerTitle} numberOfLines={1}>Chi tiết sự cố</Text>
+            
+            {/* LOGIC XÓA:
+                1. Phải là Captain (hoặc role có quyền xóa)
+                2. Trạng thái phải là 'Pending'
+            */}
+            {userRole === "Captain" && report.status === 'Pending' ? (
+               !deleting ? (
+                <TouchableOpacity onPress={handleDelete} style={[styles.iconBtn, styles.deleteHeaderBtn]}>
                   <Feather name="trash-2" size={20} color={COLORS.white} />
                 </TouchableOpacity>
               ) : (
                 <ActivityIndicator size="small" color={COLORS.white} />
               )
-            ) : (
-              <View style={{ width: 40 }} />
-            )}
+            ) : <View style={{width: 40}} />} 
           </View>
         </SafeAreaView>
       </LinearGradient>
 
-      <ScrollView
-        contentContainerStyle={styles.scrollViewContent}
-        showsVerticalScrollIndicator={false}
-      >
-        <View
-          style={[
-            styles.card,
-            styles.statusCard,
-            { borderTopColor: statusInfo.color },
-          ]}
-        >
+      <ScrollView contentContainerStyle={styles.scrollViewContent} showsVerticalScrollIndicator={false}>
+        
+        {/* --- STATUS CARD --- */}
+        <View style={[styles.card, styles.statusCard, { borderTopColor: statusInfo.color }]}>
+          {/* ... (Giữ nguyên phần hiển thị Status Card) */}
           <View style={styles.statusHeader}>
-            <View style={{ flexDirection: "row", alignItems: "center" }}>
-              <View
-                style={[
-                  styles.statusIconBox,
-                  { backgroundColor: statusInfo.color + "15" },
-                ]}
-              >
-                <Feather
-                  name={statusInfo.icon}
-                  size={24}
-                  color={statusInfo.color}
-                />
-              </View>
-              <View>
-                <Text style={styles.statusLabel}>Trạng thái hiện tại</Text>
-                <Text style={[styles.statusValue, { color: statusInfo.color }]}>
-                  {statusInfo.label}
-                </Text>
-              </View>
+            <View style={{flexDirection: 'row', alignItems: 'center'}}>
+                <View style={[styles.statusIconBox, { backgroundColor: statusInfo.color + '15' }]}>
+                  <Feather name={statusInfo.icon} size={24} color={statusInfo.color} />
+                </View>
+                <View>
+                  <Text style={styles.statusLabel}>Trạng thái hiện tại</Text>
+                  <Text style={[styles.statusValue, { color: statusInfo.color }]}>{statusInfo.label}</Text>
+                </View>
             </View>
-
+            
+            {/* Chỉ User (Admin/Port Manager) mới được đổi trạng thái */}
             {userRole === "User" && (
-              <TouchableOpacity
-                style={styles.editStatusBtn}
-                onPress={() => setShowStatusModal(true)}
-              >
-                <Feather name="edit-2" size={18} color={COLORS.primary} />
-              </TouchableOpacity>
+                <TouchableOpacity 
+                    style={styles.editStatusBtn} 
+                    onPress={() => setShowStatusModal(true)}
+                >
+                    <Feather name="edit-2" size={18} color={COLORS.primary} />
+                </TouchableOpacity>
             )}
           </View>
-
+          
           <View style={styles.divider} />
-
+          
           <View style={styles.dateRow}>
-            <Feather
-              name="calendar"
-              size={16}
-              color={COLORS.textSub}
-              style={{ marginRight: 8 }}
-            />
-            <Text style={styles.dateText}>
-              Ngày báo cáo:{" "}
-              <Text style={styles.dateValue}>
-                {new Date(report.createdDate).toLocaleDateString("vi-VN")}
-              </Text>
-            </Text>
+             <Feather name="calendar" size={16} color={COLORS.textSub} style={{marginRight: 8}} />
+             <Text style={styles.dateText}>
+                Ngày báo cáo: <Text style={styles.dateValue}>{new Date(report.createdDate).toLocaleDateString('vi-VN')}</Text>
+             </Text>
           </View>
         </View>
 
+        {/* --- INFO CARDS (Giữ nguyên) --- */}
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Thông tin sự cố</Text>
           <View style={styles.divider} />
-          <DetailRow
-            icon="alert-triangle"
-            label="Tiêu đề"
-            value={report.title}
-          />
-          <DetailRow
-            icon="file-text"
-            label="Mô tả chi tiết"
-            value={report.description}
-            isMultiLine
-          />
+          <DetailRow icon="alert-triangle" label="Tiêu đề" value={report.title} />
+          <DetailRow icon="file-text" label="Mô tả chi tiết" value={report.description} isMultiLine />
         </View>
 
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Địa điểm & Liên quan</Text>
           <View style={styles.divider} />
-          <DetailRow
-            icon="ship-wheel"
-            label="Tàu gặp sự cố"
-            value={report.shipName}
-            iconLibrary="MaterialCommunityIcons"
-          />
-          <DetailRow
-            icon="map-pin"
-            label="Cảng ghi nhận"
-            value={report.portName}
-          />
-          <DetailRow
-            icon="user"
-            label="Thuyền trưởng báo cáo"
-            value={report.captainName}
-          />
+          <DetailRow icon="ship-wheel" label="Tàu gặp sự cố" value={report.shipName} iconLibrary="MaterialCommunityIcons" />
+          <DetailRow icon="map-pin" label="Cảng ghi nhận" value={report.portName} />
+          <DetailRow icon="user" label="Thuyền trưởng báo cáo" value={report.captainName} />
         </View>
+
       </ScrollView>
 
+      {/* --- STATUS MODAL (Giữ nguyên) --- */}
       <Modal
         animationType="slide"
         transparent={true}
@@ -344,240 +273,141 @@ const ReportProblemDetailScreen = ({ route, navigation }) => {
         onRequestClose={() => setShowStatusModal(false)}
       >
         <TouchableWithoutFeedback onPress={() => setShowStatusModal(false)}>
-          <View style={styles.modalOverlay}>
-            <TouchableWithoutFeedback>
-              <View style={styles.modalContent}>
-                <View style={styles.modalHandle} />
-                <Text style={styles.modalTitle}>Cập nhật trạng thái</Text>
+            <View style={styles.modalOverlay}>
+                <TouchableWithoutFeedback>
+                    <View style={styles.modalContent}>
+                        <View style={styles.modalHandle} />
+                        <Text style={styles.modalTitle}>Cập nhật trạng thái</Text>
+                        
+                        {STATUS_OPTIONS.map((item) => (
+                            <TouchableOpacity
+                                key={item.key}
+                                style={[
+                                    styles.statusOption, 
+                                    report.status === item.key && styles.statusOptionSelected,
+                                    { borderColor: report.status === item.key ? item.color : COLORS.border }
+                                ]}
+                                onPress={() => updateStatus(item.key)}
+                                disabled={updatingStatus}
+                            >
+                                <View style={{flexDirection: 'row', alignItems: 'center'}}>
+                                    <View style={[styles.optionIcon, { backgroundColor: item.color + '20' }]}>
+                                        <Feather name={item.icon} size={18} color={item.color} />
+                                    </View>
+                                    <Text style={[
+                                        styles.statusOptionText, 
+                                        report.status === item.key && { color: COLORS.textMain, fontWeight: '700' }
+                                    ]}>{item.label}</Text>
+                                </View>
+                                {report.status === item.key && <Feather name="check" size={20} color={item.color} />}
+                            </TouchableOpacity>
+                        ))}
 
-                {STATUS_OPTIONS.map((item) => (
-                  <TouchableOpacity
-                    key={item.key}
-                    style={[
-                      styles.statusOption,
-                      report.status === item.key && styles.statusOptionSelected,
-                      {
-                        borderColor:
-                          report.status === item.key
-                            ? item.color
-                            : COLORS.border,
-                      },
-                    ]}
-                    onPress={() => updateStatus(item.key)}
-                    disabled={updatingStatus}
-                  >
-                    <View
-                      style={{ flexDirection: "row", alignItems: "center" }}
-                    >
-                      <View
-                        style={[
-                          styles.optionIcon,
-                          { backgroundColor: item.color + "20" },
-                        ]}
-                      >
-                        <Feather
-                          name={item.icon}
-                          size={18}
-                          color={item.color}
-                        />
-                      </View>
-                      <Text
-                        style={[
-                          styles.statusOptionText,
-                          report.status === item.key && {
-                            color: COLORS.textMain,
-                            fontWeight: "700",
-                          },
-                        ]}
-                      >
-                        {item.label}
-                      </Text>
+                        <TouchableOpacity 
+                            style={styles.closeModalBtn}
+                            onPress={() => setShowStatusModal(false)}
+                        >
+                            <Text style={styles.closeModalText}>Đóng</Text>
+                        </TouchableOpacity>
                     </View>
-                    {report.status === item.key && (
-                      <Feather name="check" size={20} color={item.color} />
-                    )}
-                  </TouchableOpacity>
-                ))}
-
-                <TouchableOpacity
-                  style={styles.closeModalBtn}
-                  onPress={() => setShowStatusModal(false)}
-                >
-                  <Text style={styles.closeModalText}>Đóng</Text>
-                </TouchableOpacity>
-              </View>
-            </TouchableWithoutFeedback>
-          </View>
+                </TouchableWithoutFeedback>
+            </View>
         </TouchableWithoutFeedback>
       </Modal>
+
     </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.bg },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: COLORS.bg,
-  },
-
+  loadingContainer: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: COLORS.bg },
+  
+  /* HEADER */
   headerGradient: { paddingBottom: 20 },
   headerContent: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 20,
-    paddingVertical: 10,
+    flexDirection: "row", alignItems: "center", justifyContent: "space-between",
+    paddingHorizontal: 20, paddingVertical: 10,
   },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: "700",
-    color: COLORS.white,
-    flex: 1,
-    textAlign: "center",
-    marginHorizontal: 10,
+  headerTitle: { fontSize: 18, fontWeight: "700", color: COLORS.white, flex: 1, textAlign: 'center', marginHorizontal: 10 },
+  iconBtn: { 
+      width: 40, height: 40, borderRadius: 12, 
+      backgroundColor: 'rgba(255,255,255,0.15)', 
+      alignItems: 'center', justifyContent: 'center' 
   },
-  iconBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
-    backgroundColor: "rgba(255,255,255,0.15)",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  deleteHeaderBtn: { backgroundColor: "rgba(239, 68, 68, 0.9)" },
+  deleteHeaderBtn: { backgroundColor: 'rgba(239, 68, 68, 0.9)' },
 
   scrollViewContent: { padding: 20, paddingBottom: 40 },
 
+  /* CARD STYLES */
   card: {
     backgroundColor: COLORS.white,
     borderRadius: 20,
     padding: 20,
     marginBottom: 20,
-    shadowColor: COLORS.cardShadow,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 1,
-    shadowRadius: 12,
+    shadowColor: COLORS.cardShadow, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 1, shadowRadius: 12,
     elevation: 3,
   },
-  cardTitle: {
-    fontSize: 17,
-    fontWeight: "700",
-    color: COLORS.textMain,
-    marginBottom: 15,
-  },
+  cardTitle: { fontSize: 17, fontWeight: '700', color: COLORS.textMain, marginBottom: 15 },
   divider: { height: 1, backgroundColor: COLORS.border, marginBottom: 15 },
 
+  /* STATUS CARD */
   statusCard: { borderTopWidth: 4 },
-  statusHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: 15,
-  },
-  statusIconBox: {
-    width: 48,
-    height: 48,
-    borderRadius: 14,
-    justifyContent: "center",
-    alignItems: "center",
-    marginRight: 15,
-  },
+  statusHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 15 },
+  statusIconBox: { width: 48, height: 48, borderRadius: 14, justifyContent: 'center', alignItems: 'center', marginRight: 15 },
   statusLabel: { fontSize: 13, color: COLORS.textSub, marginBottom: 2 },
-  statusValue: { fontSize: 18, fontWeight: "800" },
-  editStatusBtn: { padding: 10, backgroundColor: "#F1F5F9", borderRadius: 12 },
-  dateRow: { flexDirection: "row", alignItems: "center" },
+  statusValue: { fontSize: 18, fontWeight: '800' },
+  editStatusBtn: { padding: 10, backgroundColor: '#F1F5F9', borderRadius: 12 },
+  dateRow: { flexDirection: 'row', alignItems: 'center' },
   dateText: { fontSize: 14, color: COLORS.textSub },
-  dateValue: { color: COLORS.textMain, fontWeight: "600" },
+  dateValue: { color: COLORS.textMain, fontWeight: '600' },
 
-  detailRow: { flexDirection: "row", marginBottom: 20 },
+  /* DETAIL ROW */
+  detailRow: { flexDirection: 'row', marginBottom: 20 },
   iconBox: {
-    width: 44,
-    height: 44,
-    borderRadius: 14,
-    backgroundColor: "#F1F5F9",
-    justifyContent: "center",
-    alignItems: "center",
-    marginRight: 16,
+    width: 44, height: 44, borderRadius: 14, backgroundColor: '#F1F5F9',
+    justifyContent: 'center', alignItems: 'center', marginRight: 16,
   },
-  detailContent: { flex: 1, justifyContent: "center" },
-  detailLabel: {
-    fontSize: 13,
-    color: COLORS.textSub,
-    marginBottom: 4,
-    fontWeight: "500",
-  },
-  detailValue: { fontSize: 16, color: COLORS.textMain, fontWeight: "600" },
+  detailContent: { flex: 1, justifyContent: 'center' },
+  detailLabel: { fontSize: 13, color: COLORS.textSub, marginBottom: 4, fontWeight: '500' },
+  detailValue: { fontSize: 16, color: COLORS.textMain, fontWeight: '600' },
 
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: COLORS.overlay,
-    justifyContent: "flex-end",
+  /* MODAL BOTTOM SHEET */
+  modalOverlay: { 
+      flex: 1, backgroundColor: COLORS.overlay, justifyContent: 'flex-end' 
   },
-  modalContent: {
-    backgroundColor: COLORS.white,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    padding: 24,
-    paddingBottom: 40,
+  modalContent: { 
+      backgroundColor: COLORS.white, 
+      borderTopLeftRadius: 24, borderTopRightRadius: 24, 
+      padding: 24, paddingBottom: 40 
   },
-  modalHandle: {
-    width: 40,
-    height: 5,
-    backgroundColor: COLORS.border,
-    borderRadius: 10,
-    alignSelf: "center",
-    marginBottom: 20,
+  modalHandle: { 
+      width: 40, height: 5, backgroundColor: COLORS.border, 
+      borderRadius: 10, alignSelf: 'center', marginBottom: 20 
   },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: "700",
-    color: COLORS.textMain,
-    marginBottom: 20,
-    textAlign: "center",
-  },
+  modalTitle: { fontSize: 18, fontWeight: '700', color: COLORS.textMain, marginBottom: 20, textAlign: 'center' },
   statusOption: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    backgroundColor: "#FFF",
-    borderRadius: 14,
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: COLORS.border,
+      flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+      paddingVertical: 14, paddingHorizontal: 16,
+      backgroundColor: '#FFF', borderRadius: 14, marginBottom: 12,
+      borderWidth: 1, borderColor: COLORS.border
   },
-  statusOptionSelected: { backgroundColor: "#F8FAFC", borderWidth: 2 },
-  optionIcon: {
-    width: 32,
-    height: 32,
-    borderRadius: 8,
-    justifyContent: "center",
-    alignItems: "center",
-    marginRight: 12,
+  statusOptionSelected: { backgroundColor: '#F8FAFC', borderWidth: 2 },
+  optionIcon: { 
+      width: 32, height: 32, borderRadius: 8, 
+      justifyContent: 'center', alignItems: 'center', marginRight: 12 
   },
-  statusOptionText: { fontSize: 16, fontWeight: "500", color: COLORS.textSub },
+  statusOptionText: { fontSize: 16, fontWeight: '500', color: COLORS.textSub },
+  
+  closeModalBtn: { 
+      marginTop: 10, paddingVertical: 15, borderRadius: 14, 
+      backgroundColor: '#F1F5F9', alignItems: 'center' 
+  },
+  closeModalText: { fontSize: 16, fontWeight: '700', color: COLORS.textSub },
 
-  closeModalBtn: {
-    marginTop: 10,
-    paddingVertical: 15,
-    borderRadius: 14,
-    backgroundColor: "#F1F5F9",
-    alignItems: "center",
-  },
-  closeModalText: { fontSize: 16, fontWeight: "700", color: COLORS.textSub },
-
-  errorButton: {
-    marginTop: 15,
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    backgroundColor: COLORS.secondary,
-    borderRadius: 10,
-  },
-  errorButtonText: { color: COLORS.white, fontWeight: "bold" },
+  /* ERROR STATE */
+  errorButton: { marginTop: 15, paddingVertical: 10, paddingHorizontal: 20, backgroundColor: COLORS.secondary, borderRadius: 10 },
+  errorButtonText: { color: COLORS.white, fontWeight: 'bold' }
 });
 
 export default ReportProblemDetailScreen;
