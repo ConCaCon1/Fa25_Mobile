@@ -36,6 +36,7 @@ import BookingDetailScreen from "../screens/BookingDetailScreen/BookingDetailScr
 import CheckoutDockScreen from "../screens/CheckoutDockScreen/CheckoutDockScreen";
 import BookingSuccessScreen from "../screens/BookingSuccessScreen/BookingSuccessScreen";
 import BookingFailScreen from "../screens/BookingFailScreen/BookingFailScreen";
+import EditProfileScreen from "../screens/EditProfileScreen/EditProfileScreen";
 
 const Stack = createNativeStackNavigator();
 
@@ -82,6 +83,7 @@ export default function AppNavigator() {
         <Stack.Screen name="CheckoutDockScreen" component={CheckoutDockScreen} />
         <Stack.Screen name="BookingSuccessScreen" component={BookingSuccessScreen} />
         <Stack.Screen name="BookingFailScreen" component={BookingFailScreen} />
+        <Stack.Screen name="EditProfileScreen" component={EditProfileScreen} />
         <Stack.Screen
           name="CaptainAccount"
           children={(props) => (

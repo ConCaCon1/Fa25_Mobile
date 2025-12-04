@@ -111,7 +111,7 @@ const OrderScreen = ({ navigation }) => {
     setTimeout(() => setCurrentPage((prev) => prev + 1), 500);
   };
 
-  const renderItem = ({ item }) => {
+const renderItem = ({ item }) => {
     const statusStyle = getStatusStyle(item.status);
     return (
       <TouchableOpacity
@@ -138,14 +138,29 @@ const OrderScreen = ({ navigation }) => {
         <View style={styles.divider} />
 
         <View style={styles.cardBody}>
+          {/* Dòng 1: Tên Xưởng (Mới thêm) */}
+          <View style={styles.infoRow}>
+            <View style={styles.rowLeft}>
+              <MaterialCommunityIcons name="storefront-outline" size={16} color="#8898AA" />
+              <Text style={styles.infoLabel}>Xưởng</Text>
+            </View>
+            <Text style={styles.infoValue} numberOfLines={1}>
+                {item.boatyardName || "Chưa cập nhật"}
+            </Text>
+          </View>
+
+          {/* Dòng 2: Tên Tàu */}
           <View style={styles.infoRow}>
             <View style={styles.rowLeft}>
               <Ionicons name="boat-outline" size={16} color="#8898AA" />
-              <Text style={styles.infoLabel}>Tàu (Ship ID)</Text>
+              <Text style={styles.infoLabel}>Tàu</Text>
             </View>
-            <Text style={styles.infoValue}>{item.shipId}</Text>
+            <Text style={styles.infoValue} numberOfLines={1}>
+                {item.shipName || item.shipId || "---"}
+            </Text>
           </View>
 
+          {/* Dòng 3: Tổng tiền */}
           <View style={styles.infoRow}>
             <View style={styles.rowLeft}>
               <Ionicons name="wallet-outline" size={16} color="#8898AA" />
@@ -168,7 +183,6 @@ const OrderScreen = ({ navigation }) => {
     );
   };
 
-  // ✅ 4. Component Footer chỉ hiện khi loadingMore = true
   const renderFooter = () => {
     if (!loadingMore) return <View style={{ height: 20 }} />;
     return (
@@ -248,7 +262,6 @@ const OrderScreen = ({ navigation }) => {
         />
       )}
 
-      {/* FILTER MODAL */}
       <Modal visible={isFilterModalVisible} animationType="slide" transparent={true}>
         <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setFilterModalVisible(false)}>
           <View style={styles.modalContent}>

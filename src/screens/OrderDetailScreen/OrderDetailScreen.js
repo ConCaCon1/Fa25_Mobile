@@ -228,12 +228,7 @@ const OrderDetailScreen = ({ route, navigation }) => {
         <Text style={styles.sectionTitle}>THÔNG TIN VẬN CHUYỂN</Text>
         <View style={styles.card}>
           <InfoRow icon="boat-outline" label="Mã tàu (Ship ID)" value={order.shipId || "---"} />
-          <InfoRow
-            icon="business-outline"
-            label="Xưởng đóng tàu"
-            value={order.boatyardId || "Chưa cập nhật"}
-            isLast
-          />
+     
         </View>
 
         {/* 4. Product List & Total */}

@@ -8,16 +8,18 @@ import {
   StatusBar,
   Alert,
   ActivityIndicator,
-  Animated,
+  Platform,
 } from "react-native";
 import { Ionicons, MaterialIcons, FontAwesome5 } from "@expo/vector-icons";
 import { SwipeListView } from "react-native-swipe-list-view";
 import { LinearGradient } from 'expo-linear-gradient';
+import * as ImagePicker from "expo-image-picker";
 
 import BottomNavBar from "../../components/BottomNavBar";
 import { apiGet, apiPatch } from "../../ultis/api";
 import { useIsFocused } from "@react-navigation/native";
-import { clearAllData } from "../../auth/authStorage";
+import { clearAllData, getToken } from "../../auth/authStorage";
+import { API_BASE_URL } from "@env";
 
 const COLORS = {
   primary: "#0A2540",
@@ -39,6 +41,7 @@ const AccountScreen = ({ navigation }) => {
   
   const [profile, setProfile] = useState(null);
   const [isDataLoading, setIsDataLoading] = useState(true);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
   
   const [stats, setStats] = useState({ orders: 0, bookings: 0 });
   
@@ -46,7 +49,7 @@ const AccountScreen = ({ navigation }) => {
 
   useEffect(() => {
     const loadAllData = async () => {
-      setIsDataLoading(true);
+      if (!profile) setIsDataLoading(true);
       try {
         const [profileRes, ordersRes, bookingsRes] = await Promise.all([
             apiGet("/auth/profile"),
@@ -79,6 +82,71 @@ const AccountScreen = ({ navigation }) => {
         loadAllData();
     }
   }, [isFocused]);
+
+  const handleUpdateAvatar = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== "granted") {
+      Alert.alert("Lỗi", "Cần quyền truy cập thư viện ảnh để thay đổi avatar.");
+      return;
+    }
+
+    let result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.8,
+    });
+
+    if (!result.canceled) {
+      uploadAvatarToServer(result.assets[0]);
+    }
+  };
+
+  const uploadAvatarToServer = async (asset) => {
+    setUploadingAvatar(true);
+    try {
+      const token = await getToken();
+      const formData = new FormData();
+      
+      const fileName = asset.uri.split('/').pop();
+      const match = /\.(\w+)$/.exec(fileName);
+      const type = match ? `image/${match[1]}` : `image`;
+
+      formData.append("AvatarUrl", {
+        uri: Platform.OS === 'ios' ? asset.uri.replace('file://', '') : asset.uri,
+        name: fileName,
+        type: type,
+      });
+
+      if (profile) {
+          formData.append("FullName", profile.fullName || "");
+          formData.append("PhoneNumber", profile.phoneNumber || "");
+          formData.append("Address", profile.address || "");
+      }
+
+      const response = await fetch(`${API_BASE_URL}/auth/profile`, {
+         method: "PATCH",
+         headers: {
+           Authorization: `Bearer ${token}`,
+         },
+         body: formData
+      });
+
+      if (response.ok) {
+         Alert.alert("Thành công", "Đã cập nhật ảnh đại diện!");
+         const res = await apiGet("/auth/profile");
+         if (res.data) setProfile(res.data);
+      } else {
+         Alert.alert("Lỗi", "Không thể cập nhật ảnh.");
+      }
+
+    } catch (error) {
+      console.log("Upload error:", error);
+      Alert.alert("Lỗi", "Có lỗi xảy ra khi upload.");
+    } finally {
+      setUploadingAvatar(false);
+    }
+  };
 
   const fetchShips = async (pageNum = 1, reset = false) => {
     try {
@@ -183,7 +251,7 @@ const AccountScreen = ({ navigation }) => {
                     <MaterialIcons name="app-registration" size={14} color={COLORS.textSub} />
                     <Text style={styles.detailText}>{ship.registerNo}</Text>
                 </View>
-              
+            
                 <View style={styles.detailItem}>
                     <Ionicons name="calendar-outline" size={14} color={COLORS.textSub} />
                     <Text style={styles.detailText}>{ship.buildYear}</Text>
@@ -206,13 +274,26 @@ const AccountScreen = ({ navigation }) => {
                     source={{ uri: profile?.avatarUrl || "https://i.pravatar.cc/300" }}
                     style={styles.avatarImage}
                 />
-                <TouchableOpacity style={styles.editAvatarBtn}>
-                    <Ionicons name="camera" size={14} color="#FFF" />
+                <TouchableOpacity style={styles.editAvatarBtn} onPress={handleUpdateAvatar} disabled={uploadingAvatar}>
+                    {uploadingAvatar ? (
+                        <ActivityIndicator size="small" color="#FFF" />
+                    ) : (
+                        <Ionicons name="camera" size={14} color="#FFF" />
+                    )}
                 </TouchableOpacity>
             </View>
             
             <View style={styles.headerTextContainer}>
-                <Text style={styles.profileName}>{profile?.fullName || "Thuyền Viên"}</Text>
+                <View style={styles.nameAndEditRow}>
+                    <Text style={styles.profileName}>{profile?.fullName || "Thuyền Viên"}</Text>
+                    <TouchableOpacity 
+                        style={styles.editProfileBtn} 
+                        onPress={() => navigation.navigate("EditProfileScreen")}
+                    >
+                        <MaterialIcons name="edit" size={18} color={COLORS.secondary} />
+                    </TouchableOpacity>
+                </View>
+
                 <Text style={styles.profileRole}>Captain / Ship Owner</Text>
                 <View style={styles.contactRow}>
                     <Ionicons name="call" size={12} color="#A0AEC0" />
@@ -339,6 +420,24 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.secondary, padding: 4, borderRadius: 12, borderWidth: 2, borderColor: COLORS.primary,
   },
   headerTextContainer: { flex: 1, marginLeft: 15 },
+  
+  nameAndEditRow: {
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    justifyContent: 'flex-start',
+  },
+  editProfileBtn: {
+    marginLeft: 10,
+    padding: 4,
+    backgroundColor: COLORS.white,
+    borderRadius: 8,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 1,
+    elevation: 2,
+  },
+
   profileName: { fontSize: 20, fontWeight: "bold", color: COLORS.white },
   profileRole: { fontSize: 13, color: "#A0AEC0", marginTop: 2 },
   contactRow: { flexDirection: 'row', alignItems: 'center', marginTop: 4 },
