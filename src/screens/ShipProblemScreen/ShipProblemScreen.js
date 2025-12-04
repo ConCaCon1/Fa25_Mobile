@@ -4,17 +4,18 @@ import {
   Text,
   StyleSheet,
   FlatList,
-  TouchableOpacity,
   ActivityIndicator,
   StatusBar,
-  RefreshControl, 
+  RefreshControl,
   Image,
-  u
+  TouchableOpacity 
 } from 'react-native';
-import { Ionicons, Feather } from '@expo/vector-icons';
+import { Ionicons, Feather, FontAwesome5, MaterialCommunityIcons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { LinearGradient } from 'expo-linear-gradient';
 import { apiGet } from '../../ultis/api';
 import { useFocusEffect } from "@react-navigation/native";
+
 const COLORS = {
   bg: '#F8FAFC',
   white: '#FFFFFF',
@@ -26,18 +27,20 @@ const COLORS = {
   warning: '#F59E0B',
   success: '#10B981',
   danger: '#EF4444',
+  cardShadow: 'rgba(15, 23, 42, 0.08)',
+  gradientStart: '#0A2540',
+  gradientEnd: '#163E5C',
 };
 
 const ShipProblemScreen = ({ route, navigation }) => {
   const { shipId, shipName } = route.params; 
   const [reports, setReports] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false); 
+  const [refreshing, setRefreshing] = useState(false);
 
   const fetchReports = async () => {
     try {
       const res = await apiGet(`/ships/${shipId}/report-problems?page=1&size=50&sort=createdDate,desc`);
-      
       if (res?.data?.items) {
         setReports(res.data.items);
       }
@@ -49,76 +52,106 @@ const ShipProblemScreen = ({ route, navigation }) => {
     }
   };
 
-useFocusEffect(
-  useCallback(() => {
-    fetchReports();     
-  }, [shipId])
-);
+  useFocusEffect(
+    useCallback(() => {
+      fetchReports();     
+    }, [shipId])
+  );
+
   const onRefresh = () => {
     setRefreshing(true);
     fetchReports();
   };
 
-  const getStatusColor = (status) => {
+  const getStatusInfo = (status) => {
     switch (status) {
-      case 'Pending': return COLORS.warning;
-      case 'Accepted': return COLORS.success;
-      case 'Rejected': return COLORS.danger;
-      default: return COLORS.textSub;
+      case 'Pending': return { color: COLORS.warning, label: 'Chờ xử lý', icon: 'clock' };
+      case 'Accepted': return { color: COLORS.secondary, label: 'Đã tiếp nhận', icon: 'check-circle' };
+      case 'Resolved': return { color: COLORS.success, label: 'Đã giải quyết', icon: 'check-square' };
+      case 'Rejected': return { color: COLORS.danger, label: 'Từ chối', icon: 'x-circle' };
+      default: return { color: COLORS.textSub, label: status, icon: 'help-circle' };
     }
   };
 
-  const renderItem = ({ item }) => (
-    <TouchableOpacity 
-        style={styles.card}
-        activeOpacity={0.8}
-        onPress={() => navigation.navigate("ReportProblemDetail", { id: item.id })}
-    >
-      <View style={styles.cardHeader}>
-        <View style={styles.headerLeft}>
-            <View style={[styles.iconBox, { backgroundColor: COLORS.bg }]}>
-                <Feather name="alert-triangle" size={18} color={COLORS.danger} />
-            </View>
-            <View style={{flex: 1}}>
-                <Text style={styles.cardTitle} numberOfLines={1}>{item.title}</Text>
-                <Text style={styles.dateText}>
-                    {item.createdDate ? new Date(item.createdDate).toLocaleDateString('vi-VN') : ''}
-                </Text>
-            </View>
-        </View>
+  const formatDateTime = (dateString) => {
+    if (!dateString) return '---';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('vi-VN') + ' • ' + date.toLocaleTimeString('vi-VN', {hour: '2-digit', minute:'2-digit'});
+  };
+
+  const renderItem = ({ item }) => {
+    const statusInfo = getStatusInfo(item.status);
+    
+    return (
+      <TouchableOpacity style={styles.card}
+          onPress={() => navigation.navigate("ReportProblemDetail", { id: item.id })}>
+        <View style={[styles.statusStrip, { backgroundColor: statusInfo.color }]} />
         
-        <View style={[styles.statusBadge, { backgroundColor: getStatusColor(item.status) + '15' }]}>
-            <Text style={[styles.statusText, { color: getStatusColor(item.status) }]}>{item.status}</Text>
+        <View style={styles.cardContent}>
+            <View style={styles.cardHeader}>
+                <View style={{flex: 1}}>
+                    <Text style={styles.cardTitle} numberOfLines={2}>{item.title}</Text>
+                    <View style={styles.dateRow}>
+                        <Feather name="calendar" size={12} color={COLORS.textSub} style={{marginRight: 4}} />
+                        <Text style={styles.dateText}>{formatDateTime(item.createdDate)}</Text>
+                    </View>
+                </View>
+                
+                <View style={[styles.statusBadge, { backgroundColor: statusInfo.color + '15' }]}>
+                    <Feather name={statusInfo.icon} size={14} color={statusInfo.color} style={{marginRight: 4}} />
+                    <Text style={[styles.statusText, { color: statusInfo.color }]}>
+                        {statusInfo.label}
+                    </Text>
+                </View>
+            </View>
+
+            <View style={styles.divider} />
+
+            <View style={styles.bodySection}>
+                <Text style={styles.cardDesc}>{item.description}</Text>
+            </View>
+
+            <View style={styles.divider} />
+
+            <View style={styles.cardFooter}>
+                <View style={styles.footerRow}>
+                    <View style={styles.footerItem}>
+                        <FontAwesome5 name="user-tie" size={12} color={COLORS.textSub} style={{marginRight: 6}} />
+                        <Text style={styles.footerLabel}>Báo cáo bởi: </Text>
+                        <Text style={styles.footerValue} numberOfLines={1}>{item.captainName}</Text>
+                    </View>
+                    <View style={[styles.footerItem, {marginTop: 4}]}>
+                        <Ionicons name="location-sharp" size={14} color={COLORS.secondary} style={{marginRight: 4}} />
+                        <Text style={styles.footerValue} numberOfLines={1}>{item.portName}</Text>
+                    </View>
+                </View>
+            </View>
         </View>
-      </View>
-
-      <View style={styles.divider} />
-
-      <Text style={styles.cardDesc} numberOfLines={2}>{item.description}</Text>
-      
-      <View style={styles.cardFooter}>
-          <View style={styles.locationRow}>
-             <Ionicons name="location-outline" size={14} color={COLORS.textSub} />
-             <Text style={styles.locationText}>{item.portName || "Không rõ vị trí"}</Text>
-          </View>
-          <Ionicons name="chevron-forward" size={16} color={COLORS.textSub} />
-      </View>
-    </TouchableOpacity>
-  );
+      </TouchableOpacity>
+    );
+  };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor={COLORS.bg} />
+    <View style={styles.container}>
+      <StatusBar barStyle="light-content" backgroundColor={COLORS.gradientStart} />
       
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-          <Ionicons name="arrow-back" size={24} color={COLORS.textMain} />
-        </TouchableOpacity>
-        <View style={{flex: 1, marginLeft: 10}}>
-            <Text style={styles.headerTitle}>Sự cố tàu {shipName}</Text>
-            <Text style={styles.headerSub}>Danh sách báo cáo</Text>
-        </View>
-      </View>
+      <LinearGradient
+        colors={[COLORS.gradientStart, COLORS.gradientEnd]}
+        style={styles.headerGradient}
+      >
+        <SafeAreaView edges={['top']}>
+            <View style={styles.headerContent}>
+                <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
+                    <Ionicons name="arrow-back" size={24} color={COLORS.white} />
+                </TouchableOpacity>
+                <View style={{flex: 1, marginLeft: 15}}>
+                    <Text style={styles.headerTitle}>Sự cố tàu {shipName}</Text>
+                    <Text style={styles.headerSub}>Danh sách sự cố đã ghi nhận</Text>
+                </View>
+                <View style={{width: 40}} /> 
+            </View>
+        </SafeAreaView>
+      </LinearGradient>
 
       {loading ? (
         <View style={styles.loadingContainer}>
@@ -129,64 +162,83 @@ useFocusEffect(
           data={reports}
           keyExtractor={(item) => item.id}
           renderItem={renderItem}
-          contentContainerStyle={{ padding: 20, paddingBottom: 50 }}
+          contentContainerStyle={styles.listContent}
+          showsVerticalScrollIndicator={false}
           refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[COLORS.primary]} />
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[COLORS.primary]} tintColor={COLORS.primary} />
           }
           ListEmptyComponent={
             <View style={styles.emptyContainer}>
                 <Image 
                     source={{ uri: "https://cdn-icons-png.flaticon.com/512/7486/7486744.png" }} 
-                    style={{ width: 80, height: 80, opacity: 0.5, marginBottom: 15, tintColor: COLORS.textSub }}
+                    style={styles.emptyImage}
                 />
                 <Text style={styles.emptyText}>Tàu này chưa có báo cáo sự cố nào.</Text>
+                <Text style={styles.emptySubText}>Tất cả hệ thống đang hoạt động bình thường.</Text>
             </View>
           }
         />
       )}
-    </SafeAreaView>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.bg },
-  loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: COLORS.bg },
   
-  header: {
-    flexDirection: 'row', alignItems: 'center', padding: 20, backgroundColor: COLORS.white,
-    borderBottomWidth: 1, borderBottomColor: COLORS.border
+  headerGradient: { paddingBottom: 20 },
+  headerContent: {
+    flexDirection: 'row', alignItems: 'center',
+    paddingHorizontal: 20, paddingVertical: 10,
   },
-  backBtn: { padding: 8, backgroundColor: '#F1F5F9', borderRadius: 10 },
-  headerTitle: { fontSize: 18, fontWeight: '700', color: COLORS.textMain },
-  headerSub: { fontSize: 13, color: COLORS.textSub },
+  backBtn: { 
+      padding: 8, backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 12 
+  },
+  headerTitle: { fontSize: 18, fontWeight: '700', color: COLORS.white },
+  headerSub: { fontSize: 13, color: 'rgba(255,255,255,0.7)', marginTop: 2 },
+
+  listContent: { padding: 20, paddingBottom: 50 },
 
   card: {
-    backgroundColor: COLORS.white, borderRadius: 16, padding: 16, marginBottom: 16,
-    borderWidth: 1, borderColor: COLORS.border,
-    shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.03, shadowRadius: 5, elevation: 2
+    backgroundColor: COLORS.white,
+    borderRadius: 16,
+    marginBottom: 16,
+    shadowColor: COLORS.cardShadow, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 1, shadowRadius: 12,
+    elevation: 3,
+    flexDirection: 'row', 
+    overflow: 'hidden'
   },
-  cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 },
-  headerLeft: { flexDirection: 'row', alignItems: 'center', flex: 1, marginRight: 10 },
-  iconBox: {
-      width: 40, height: 40, borderRadius: 10,
-      justifyContent: 'center', alignItems: 'center', marginRight: 12
-  },
-  cardTitle: { fontSize: 16, fontWeight: '700', color: COLORS.textMain, marginBottom: 2 },
+  statusStrip: { width: 6, height: '100%' },
+  cardContent: { flex: 1, padding: 16 },
+
+  cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 },
+  cardTitle: { fontSize: 16, fontWeight: '700', color: COLORS.textMain, marginBottom: 6, lineHeight: 22 },
+  dateRow: { flexDirection: 'row', alignItems: 'center' },
   dateText: { fontSize: 12, color: COLORS.textSub },
   
-  statusBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 20 },
+  statusBadge: { 
+      flexDirection: 'row', alignItems: 'center',
+      paddingHorizontal: 10, paddingVertical: 6, borderRadius: 20,
+      marginLeft: 10
+  },
   statusText: { fontSize: 11, fontWeight: '700' },
 
-  divider: { height: 1, backgroundColor: '#F1F5F9', marginBottom: 10 },
+  divider: { height: 1, backgroundColor: '#F1F5F9', marginVertical: 10 },
 
-  cardDesc: { fontSize: 14, color: COLORS.textSub, marginBottom: 12, lineHeight: 20 },
-  
-  cardFooter: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  locationRow: { flexDirection: 'row', alignItems: 'center' },
-  locationText: { fontSize: 13, color: COLORS.textSub, marginLeft: 4, fontWeight: '500' },
+  bodySection: { backgroundColor: '#F8FAFC', padding: 12, borderRadius: 8 },
+  cardDesc: { fontSize: 14, color: COLORS.textMain, lineHeight: 22 },
+
+  cardFooter: { marginTop: 4 },
+  footerRow: { justifyContent: 'space-between' },
+  footerItem: { flexDirection: 'row', alignItems: 'center' },
+  footerLabel: { fontSize: 12, color: COLORS.textSub },
+  footerValue: { fontSize: 13, color: COLORS.textMain, fontWeight: '600' },
 
   emptyContainer: { alignItems: 'center', marginTop: 80 },
-  emptyText: { color: COLORS.textSub, fontSize: 16, fontWeight: '500' }
+  emptyImage: { width: 100, height: 100, opacity: 0.5, marginBottom: 20, tintColor: COLORS.textSub },
+  emptyText: { fontSize: 18, fontWeight: '700', color: COLORS.textMain, marginBottom: 8 },
+  emptySubText: { fontSize: 14, color: COLORS.textSub, textAlign: 'center', width: '80%' }
 });
 
 export default ShipProblemScreen;

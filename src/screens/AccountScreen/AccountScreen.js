@@ -294,7 +294,7 @@ const AccountScreen = ({ navigation }) => {
                     </TouchableOpacity>
                 </View>
 
-                <Text style={styles.profileRole}>Captain / Ship Owner</Text>
+                <Text style={styles.profileRole}> Ship Owner</Text>
                 <View style={styles.contactRow}>
                     <Ionicons name="call" size={12} color="#A0AEC0" />
                     <Text style={styles.contactText}>{profile?.phoneNumber || "No phone number"}</Text>
