@@ -1,178 +1,125 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
   StyleSheet,
-  ScrollView,
   StatusBar,
   Image,
   TouchableOpacity,
+  ActivityIndicator,
+  FlatList
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
-import BottomNavBar from  '../../components/BottomNavBar';
-
-const mockNotifications = [
-  {
-    id: '1',
-    type: 'reminder',
-    title: 'Booking at Nam Hai Shipyard is about to start in 30 minutes.',
-    time: '5 minutes ago',
-    isRead: false,
-    icon: 'bell-ring',
-  },
-  {
-    id: '2',
-    type: 'request',
-    title: 'Booking at Bien Dong Mechanics is requested to be cancelled.',
-    time: '41 minutes ago',
-    isRead: false,
-    icon: 'file-cancel',
-  },
-  {
-    id: '3',
-    type: 'offer',
-    title: 'Nam Hai Shipyard has offered you a discount code "MH2025".',
-    time: '41 minutes ago',
-    isRead: true,
-    avatar: 'https://i.pravatar.cc/150?img=1',
-  },
-  {
-    id: '4',
-    type: 'accepted',
-    title: 'Your service request to Samantha has been accepted.',
-    time: '41 minutes ago',
-    isRead: false,
-    avatar: 'https://i.pravatar.cc/150?img=2',
-  },
-  {
-    id: '5',
-    type: 'request',
-    title: 'Samantha has sent you a connection request.',
-    time: '18/11/2025 at 15:00',
-    isRead: true,
-    avatar: 'https://i.pravatar.cc/150?img=2',
-  },
-  {
-    id: '6',
-    type: 'request',
-    title: 'John Doe has requested to participate in your upcoming maintenance schedule.',
-    time: '18/11/2025 at 15:00',
-    isRead: true,
-    avatar: 'https://i.pravatar.cc/150?img=3',
-  },
-];
+import { Ionicons, FontAwesome5 } from '@expo/vector-icons';
+import BottomNavBar from '../../components/BottomNavBar';
+import { apiGet } from '../../ultis/api'; 
 
 const NotificationScreen = ({ navigation }) => {
-  return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" />
-      <View style={styles.header}>
-        <Text style={styles.title}>Notification</Text>
-        <TouchableOpacity>
-          <MaterialCommunityIcons name="cog-outline" size={24} color="#334155" />
-        </TouchableOpacity>
+  const [ships, setShips] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchShips = async () => {
+      try {
+        const res = await apiGet('/ships?page=1&size=50&deleted=false');
+        if (res?.data?.items) {
+          setShips(res.data.items);
+        }
+      } catch (error) {
+        console.log("Lỗi lấy danh sách tàu:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchShips();
+  }, []);
+
+  const handleShipPress = (ship) => {
+    navigation.navigate("ShipProblem", { shipId: ship.id, shipName: ship.name });
+  };
+
+  const renderShipItem = ({ item }) => (
+    <TouchableOpacity 
+      style={styles.card} 
+      onPress={() => handleShipPress(item)}
+      activeOpacity={0.8}
+    >
+      <View style={styles.iconContainer}>
+         <Image 
+            source={{ uri: "https://cdn-icons-png.flaticon.com/512/7486/7486744.png" }} 
+            style={styles.avatar} 
+         />
       </View>
 
-      <ScrollView contentContainerStyle={styles.scrollContainer}>
-        {mockNotifications.map(item => (
-          <TouchableOpacity key={item.id} style={styles.card}>
-            {!item.isRead && <View style={styles.unreadDot} />}
-            
-            <View style={styles.iconContainer}>
-              {item.avatar ? (
-                <Image source={{ uri: item.avatar }} style={styles.avatar} />
-              ) : (
-                <MaterialCommunityIcons name={item.icon} size={24} color="#003d66" />
-              )}
-            </View>
+      <View style={styles.textContent}>
+        <Text style={styles.shipName}>{item.name}</Text>
+        <Text style={styles.shipInfo}>IMO: {item.imoNumber || '---'}</Text>
+        <Text style={styles.shipInfo}>Đăng ký: {item.registerNo}</Text>
+      </View>
 
-            <View style={styles.textContent}>
-              <Text style={styles.notificationTitle}>{item.title}</Text>
-              <Text style={styles.notificationTime}>{item.time}</Text>
+      <Ionicons name="chevron-forward" size={20} color="#CBD5E1" />
+    </TouchableOpacity>
+  );
+
+  return (
+    <SafeAreaView style={styles.container}>
+      <StatusBar barStyle="dark-content" backgroundColor="#F0F4F8" />
+      
+      <View style={styles.header}>
+        <Text style={styles.title}>Chọn tàu để xem sự cố</Text>
+      </View>
+
+      {loading ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#0A2540" />
+        </View>
+      ) : (
+        <FlatList
+          data={ships}
+          keyExtractor={(item) => item.id}
+          renderItem={renderShipItem}
+          contentContainerStyle={styles.scrollContainer}
+          ListEmptyComponent={
+            <View style={styles.emptyContainer}>
+                <Text style={styles.emptyText}>Bạn chưa có tàu nào.</Text>
             </View>
-          </TouchableOpacity>
-        ))}
-      </ScrollView>
+          }
+        />
+      )}
 
       <BottomNavBar activeScreen="Notifications" navigation={navigation} /> 
+      
     </SafeAreaView>
   );
 };
 
-export default NotificationScreen;
-
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#F0F4F8',
-  },
+  container: { flex: 1, backgroundColor: '#F0F4F8' },
+  loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 16,
-    backgroundColor: '#FFFFFF',
-    borderBottomWidth: 1,
-    borderBottomColor: '#E2E8F0',
+    flexDirection: 'row', alignItems: 'center', padding: 20, backgroundColor: '#FFF',
+    borderBottomWidth: 1, borderBottomColor: '#E2E8F0'
   },
-  title: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#1C2A3A',
-  },
-  scrollContainer: {
-    padding: 16,
-    paddingBottom: 80, // Khoảng trống cho bottom nav
-  },
+  title: { fontSize: 20, fontWeight: 'bold', color: '#1C2A3A' },
+  scrollContainer: { padding: 16, paddingBottom: 100 },
+  
   card: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    padding: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 12,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.08,
-    shadowRadius: 5,
-    elevation: 3,
-  },
-  unreadDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: '#dc3545', // Màu đỏ cho "chưa đọc"
-    position: 'absolute',
-    top: 16,
-    left: 8,
+    backgroundColor: '#FFF', borderRadius: 16, padding: 16, marginBottom: 12,
+    flexDirection: 'row', alignItems: 'center',
+    shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 8, elevation: 2
   },
   iconContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: '#E9EFF5',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 16,
-    marginLeft: 12, // Khoảng trống cho unread dot
+    width: 56, height: 56, borderRadius: 12, backgroundColor: '#F1F5F9',
+    justifyContent: 'center', alignItems: 'center', marginRight: 16
   },
-  avatar: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-  },
-  textContent: {
-    flex: 1,
-  },
-  notificationTitle: {
-    fontSize: 15,
-    color: '#334155',
-    lineHeight: 22,
-  },
-  notificationTime: {
-    fontSize: 12,
-    color: '#5A6A7D',
-    marginTop: 4,
-  },
+  avatar: { width: 40, height: 40, opacity: 0.8 },
+  textContent: { flex: 1 },
+  shipName: { fontSize: 16, fontWeight: '700', color: '#1E293B', marginBottom: 4 },
+  shipInfo: { fontSize: 13, color: '#64748B' },
+  
+  emptyContainer: { alignItems: 'center', marginTop: 50 },
+  emptyText: { color: '#64748B', fontSize: 16 }
 });
+
+export default NotificationScreen;

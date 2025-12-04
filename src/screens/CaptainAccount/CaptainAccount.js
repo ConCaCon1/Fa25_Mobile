@@ -1,250 +1,284 @@
-import { 
-  View, 
-  Text, 
-  ScrollView, 
-  StyleSheet, 
-  TouchableOpacity, 
-  Image, 
-  Platform,
+import React, { useState, useEffect } from "react";
+import {
+  View,
+  Text,
+  StyleSheet,
+  Image,
+  TouchableOpacity,
+  StatusBar,
   ActivityIndicator,
-} from 'react-native';
-import  { useEffect, useState } from 'react';
-import { getUserData } from '../../auth/authStorage';
-import { Ionicons, Feather } from '@expo/vector-icons'; 
-import { SafeAreaView } from 'react-native-safe-area-context';
+  ScrollView,
+  Platform,
+} from "react-native";
+import { Ionicons, Feather, MaterialIcons } from "@expo/vector-icons";
+import { LinearGradient } from 'expo-linear-gradient';
+import * as ImagePicker from "expo-image-picker";
+import { useIsFocused } from "@react-navigation/native";
 
-const ProfileOption = ({ iconName, title, onPress }) => (
-  <TouchableOpacity style={styles.optionContainer} onPress={onPress}>
-    <View style={styles.optionLeft}>
-      <Feather name={iconName} size={20} color="#333" /> 
-      <Text style={styles.optionText}>{title}</Text>
+import { getUserData, clearAllData, getToken } from "../../auth/authStorage";
+import { apiGet } from "../../ultis/api";
+import { API_BASE_URL } from "@env";
+
+const COLORS = {
+  primary: "#0A2540",
+  secondary: "#00A8E8",
+  accent: "#FF6B6B", 
+  bg: "#F8FAFC",
+  white: "#FFFFFF",
+  textMain: "#1E293B",
+  textSub: "#64748B",
+  cardBg: "#FFFFFF",
+  border: "#E2E8F0",
+};
+
+const ProfileOption = ({ iconName, title, onPress, iconColor = COLORS.textMain, textColor = COLORS.textMain, isLast = false }) => (
+  <TouchableOpacity 
+    style={[styles.optionContainer, isLast && { borderBottomWidth: 0 }]} 
+    onPress={onPress}
+    activeOpacity={0.7}
+  >
+    <View style={[styles.iconBox, { backgroundColor: iconColor + '15' }]}>
+      <Feather name={iconName} size={20} color={iconColor} /> 
     </View>
-    <Ionicons name="chevron-forward" size={20} color="#A0A0A0" />
+    <Text style={[styles.optionText, { color: textColor }]}>{title}</Text>
+    <Ionicons name="chevron-forward" size={20} color="#CBD5E1" />
   </TouchableOpacity>
 );
 
 const CaptainAccount = ({ navigation }) => {
-  const [captainData, setCaptainData] = useState(null);
+  const [profile, setProfile] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const isFocused = useIsFocused();
 
   useEffect(() => {
-    const loadDataAndCheckRole = async () => {
-      const data = await getUserData(); 
-      
-      if (data.role !== "Captain") {
+    const loadData = async () => {
+      const userData = await getUserData();
+      if (userData?.role !== "Captain") {
         navigation.replace("Home");
         return;
       }
-      
-      if (data.username && data.email) {
-        setCaptainData({
-            name: data.username.charAt(0).toUpperCase() + data.username.slice(1), 
-            email: data.email,
-            avatarUrl: "https://i.imgur.com/G55vN.png", 
-            appVersion: "App version 003",
-        });
-      } else {
-         setCaptainData({
-            name: "Captain User", 
-            email: "default@example.com",
-            avatarUrl: "https://i.imgur.com/G55vN.png", 
-            appVersion: "App version 003",
-        });
+
+      try {
+        const res = await apiGet("/auth/profile");
+        if (res.status === 200 && res.data) {
+          setProfile(res.data);
+        }
+      } catch (error) {
+        console.log("Lỗi load profile:", error);
+      } finally {
+        setLoading(false);
       }
     };
-    loadDataAndCheckRole();
-  }, [navigation]);
 
-  if (!captainData) {
+    if (isFocused) {
+        loadData();
+    }
+  }, [isFocused]);
+
+  const handleUpdateAvatar = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== "granted") return;
+
+    let result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true, aspect: [1, 1], quality: 0.8,
+    });
+
+    if (!result.canceled) {
+      setUploadingAvatar(true);
+      try {
+        const asset = result.assets[0];
+        const token = await getToken();
+        const formData = new FormData();
+        const fileName = asset.uri.split('/').pop();
+        const type = /\.(\w+)$/.exec(fileName) ? `image/${/\.(\w+)$/.exec(fileName)[1]}` : `image`;
+
+        formData.append("AvatarUrl", {
+          uri: Platform.OS === 'ios' ? asset.uri.replace('file://', '') : asset.uri,
+          name: fileName,
+          type: type,
+        });
+
+        if (profile) {
+            formData.append("FullName", profile.fullName || "");
+            formData.append("PhoneNumber", profile.phoneNumber || "");
+            formData.append("Address", profile.address || "");
+        }
+
+        const response = await fetch(`${API_BASE_URL}/auth/profile`, {
+           method: "PATCH",
+           headers: { Authorization: `Bearer ${token}` },
+           body: formData
+        });
+
+        if (response.ok) {
+           const res = await apiGet("/auth/profile");
+           if (res.data) setProfile(res.data);
+        }
+      } catch (error) {
+        console.log(error);
+      } finally {
+        setUploadingAvatar(false);
+      }
+    }
+  };
+
+  const handleLogout = async () => {
+    await clearAllData();
+    navigation.reset({ index: 0, routes: [{ name: "LoginScreen" }] });
+  };
+
+  if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#1E9D47" />
-        <Text>Đang tải thông tin...</Text>
+        <ActivityIndicator size="large" color={COLORS.primary} />
       </View>
     );
   }
 
-  const handleEditProfile = () => {
-    console.log("Go to Edit Profile");
-  };
-
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <View style={styles.headerContainer}>
-        <TouchableOpacity style={styles.headerIcon}>
-          <Ionicons name="settings-outline" size={24} color="#333" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>My Profile</Text>
-      </View>
+    <View style={styles.container}>
+      <StatusBar barStyle="light-content" backgroundColor={COLORS.primary} />
       
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        
-        <View style={styles.profileSection}>
-          <View style={styles.avatarContainer}>
+      <LinearGradient
+        colors={[COLORS.primary, '#163E5C']}
+        style={styles.headerGradient}
+      >
+        <View style={styles.headerContent}>
+          <View style={styles.avatarWrapper}>
             <Image 
-              source={{ uri: captainData.avatarUrl }}
-              style={styles.avatar}
+                source={{ uri: profile?.avatarUrl || "https://i.pravatar.cc/300" }} 
+                style={styles.avatar} 
             />
-            <View style={styles.editAvatarIcon}>
-                <Feather name="camera" size={14} color="#fff" />
-            </View>
+            <TouchableOpacity style={styles.editAvatarBtn} onPress={handleUpdateAvatar} disabled={uploadingAvatar}>
+              {uploadingAvatar ? <ActivityIndicator size="small" color="#FFF"/> : <Feather name="camera" size={14} color="#FFF" />}
+            </TouchableOpacity>
           </View>
           
           <View style={styles.userInfo}>
-            <Text style={styles.userName}>{captainData.name}</Text>
-            <Text style={styles.userEmail}>{captainData.email}</Text>
+            <Text style={styles.userName}>{profile?.fullName || "Thuyền Viên"}</Text>
+ 
             
-            <TouchableOpacity style={styles.editButton} onPress={handleEditProfile}>
-              <Text style={styles.editButtonText}>Edit Profile</Text>
+            <TouchableOpacity 
+                style={styles.editProfileBtn} 
+                onPress={() => navigation.navigate("EditProfileScreen")}
+            >
+                <Text style={styles.editProfileText}>Chỉnh sửa hồ sơ</Text>
             </TouchableOpacity>
           </View>
         </View>
+      </LinearGradient>
 
-        <View style={styles.optionsGroup}>
-          <ProfileOption iconName="heart" title="Favourites" onPress={() => console.log('Favourites')} />
-          <ProfileOption iconName="download" title="Downloads" onPress={() => console.log('Downloads')} />
+      <ScrollView style={styles.bodyContainer} showsVerticalScrollIndicator={false}>
+        
+        <Text style={styles.sectionTitle}>Quản lý sự cố</Text>
+        <View style={styles.card}>
+            <ProfileOption 
+                iconName="alert-triangle" 
+                title="Báo cáo sự cố mới" 
+                onPress={() => navigation.navigate("ReportProblem")} 
+                iconColor={COLORS.accent} 
+                textColor={COLORS.accent}
+            />
+            <ProfileOption 
+                iconName="list" 
+                title="Lịch sử báo cáo" 
+                onPress={() => navigation.navigate("ProblemHistory")} 
+                iconColor={COLORS.secondary} 
+                isLast
+            />
         </View>
 
-        <View style={styles.optionsGroup}>
-          <ProfileOption iconName="globe" title="Language" onPress={() => console.log('Language')} />
-          <ProfileOption iconName="map-pin" title="Location" onPress={() => console.log('Location')} />
-          <ProfileOption iconName="monitor" title="Display" onPress={() => console.log('Display')} />
-          <ProfileOption iconName="list" title="Feed preference" onPress={() => console.log('Feed preference')} />
-          <ProfileOption iconName="credit-card" title="Subscription" onPress={() => console.log('Subscription')} />
-        </View>
+       
 
-        <View style={styles.optionsGroup}>
-          <ProfileOption iconName="trash-2" title="Clear Cache" onPress={() => console.log('Clear Cache')} />
-          <ProfileOption iconName="clock" title="Clear history" onPress={() => console.log('Clear history')} />
-          <ProfileOption iconName="log-out" title="Log Out" onPress={() => navigation.replace("LoginScreen")} />
-        </View>
+        <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+            <Feather name="log-out" size={20} color={COLORS.white} />
+            <Text style={styles.logoutText}>Đăng xuất</Text>
+        </TouchableOpacity>
 
-        <Text style={styles.appVersion}>{captainData.appVersion}</Text>
+        <Text style={styles.versionText}>Support by MaritimeHub</Text>
+        <View style={{height: 50}} /> 
 
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 };
- 
+
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: '#fff',
-    paddingTop: Platform.OS === 'android' ? 25 : 0, 
+  container: { flex: 1, backgroundColor: COLORS.bg },
+  loadingContainer: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: COLORS.bg },
+
+  /* HEADER */
+  headerGradient: {
+    paddingTop: 60,
+    paddingBottom: 30,
+    paddingHorizontal: 20,
+    borderBottomLeftRadius: 30,
+    borderBottomRightRadius: 30,
   },
-  loadingContainer: {
-      flex: 1,
-      justifyContent: 'center',
-      alignItems: 'center',
+  headerContent: { flexDirection: "row", alignItems: "center" },
+  avatarWrapper: { position: "relative" },
+  avatar: { 
+    width: 80, height: 80, borderRadius: 40, 
+    borderWidth: 3, borderColor: "rgba(255,255,255,0.3)" 
+  },
+  editAvatarBtn: {
+    position: "absolute", bottom: 0, right: 0,
+    backgroundColor: COLORS.secondary, padding: 6, borderRadius: 20,
+    borderWidth: 2, borderColor: COLORS.white
+  },
+  userInfo: { marginLeft: 16, flex: 1 },
+  userName: { fontSize: 20, fontWeight: "bold", color: COLORS.white },
+  userEmail: { fontSize: 13, color: "#94A3B8", marginTop: 2, marginBottom: 8 },
+  editProfileBtn: {
+    backgroundColor: "rgba(255,255,255,0.15)",
+    paddingVertical: 6, paddingHorizontal: 12,
+    borderRadius: 8, alignSelf: "flex-start"
+  },
+  editProfileText: { fontSize: 12, color: COLORS.white, fontWeight: "600" },
+
+  /* BODY */
+  bodyContainer: { flex: 1, paddingHorizontal: 20, marginTop: 20 },
+  sectionTitle: { 
+    fontSize: 16, fontWeight: "700", color: COLORS.textMain, 
+    marginBottom: 10, marginLeft: 4 
   },
   
-  headerContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 15,
+  /* CARD STYLE FOR OPTIONS */
+  card: {
+    backgroundColor: COLORS.cardBg,
+    borderRadius: 16,
     paddingHorizontal: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
-    position: 'relative',
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#333',
-  },
-  headerIcon: {
-    position: 'absolute',
-    right: 16,
-    top: 15,
-    padding: 5,
-  },
-
-  scrollContent: {
-    paddingHorizontal: 20,
-    paddingTop: 10,
-    paddingBottom: 40, 
-  },
-
-  profileSection: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 30,
-    paddingTop: 10,
-  },
-  avatarContainer: {
-    marginRight: 20,
-  },
-  avatar: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-  },
-  editAvatarIcon: {
-    position: 'absolute',
-    bottom: 0,
-    right: 0,
-    backgroundColor: '#333',
-    borderRadius: 12,
-    padding: 4,
-    borderWidth: 2,
-    borderColor: '#fff',
-  },
-  userInfo: {
-    flex: 1,
-  },
-  userName: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#333',
-  },
-  userEmail: {
-    fontSize: 14,
-    color: '#6B7280',
-    marginBottom: 10,
-  },
-  editButton: {
-    backgroundColor: '#E6F3EA', 
-    paddingVertical: 8,
-    paddingHorizontal: 20,
-    borderRadius: 10,
-    alignSelf: 'flex-start',
-  },
-  editButtonText: {
-    color: '#1E9D47', 
-    fontWeight: '600',
-    fontSize: 14,
-  },
-
-  optionsGroup: {
-    marginBottom: 20,
-    borderTopWidth: 1,
-    borderTopColor: '#f0f0f0',
-    paddingTop: 15,
+    marginBottom: 24,
+    shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 8,
+    elevation: 2,
   },
   optionContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 14,
+    flexDirection: "row", alignItems: "center",
+    paddingVertical: 16,
+    borderBottomWidth: 1, borderBottomColor: COLORS.border
   },
-  optionLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  iconBox: {
+    width: 36, height: 36, borderRadius: 10,
+    justifyContent: "center", alignItems: "center", marginRight: 12
   },
-  optionText: {
-    marginLeft: 15,
-    fontSize: 16,
-    color: '#333',
-    fontWeight: '500',
+  optionText: { fontSize: 15, fontWeight: "500", flex: 1 },
+
+  /* LOGOUT BUTTON */
+  logoutButton: {
+    flexDirection: "row", alignItems: "center", justifyContent: "center",
+    backgroundColor: COLORS.accent,
+    paddingVertical: 14, borderRadius: 14,
+    marginTop: 10,
+    shadowColor: COLORS.accent, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 8,
+    elevation: 4
   },
-  
-  appVersion: {
-    textAlign: 'center',
-    color: '#A0A0A0',
-    fontSize: 12,
-    marginTop: 20,
-    marginBottom: 10,
-  },
+  logoutText: { color: COLORS.white, fontSize: 16, fontWeight: "bold", marginLeft: 8 },
+
+  versionText: { 
+    textAlign: "center", color: "#94A3B8", fontSize: 12, marginTop: 20 
+  }
 });
 
 export default CaptainAccount;
