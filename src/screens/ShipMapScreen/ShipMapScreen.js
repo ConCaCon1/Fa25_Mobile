@@ -7,7 +7,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import GoongMapViewShip from "../../components/GoongMapViewShip";
 
 const ShipMapScreen = ({ route }) => {
-  const { name, latitude, longitude } = route.params;
+  const {id, name, latitude, longitude } = route.params;
   const navigation = useNavigation();
 
   const lat = parseFloat(latitude);
@@ -22,8 +22,7 @@ const ShipMapScreen = ({ route }) => {
           <GoongMapViewShip
             latitude={lat}
             longitude={lng}
-            popupText={name || "Tàu không tên"}
-            icon="🚤" 
+            popupText={name  || "Tàu không tên"}
             zoom={15}
           />
         ) : (
@@ -33,12 +32,10 @@ const ShipMapScreen = ({ route }) => {
           </View>
         )}
 
-        {/* Nút Back */}
         <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
           <Ionicons name="arrow-back" size={24} color="#fff" />
         </TouchableOpacity>
         
-        {/* Info Box (Tùy chọn) */}
         <View style={styles.infoBox}>
             <Text style={styles.infoTitle}>{name}</Text>
             <Text style={styles.infoSub}>Đang hoạt động • Radar View</Text>
@@ -68,7 +65,7 @@ const styles = StyleSheet.create({
     bottom: 30,
     left: 20,
     right: 20,
-    backgroundColor: "rgba(10, 37, 64, 0.85)", // Màu xanh navy trong suốt
+    backgroundColor: "rgba(10, 37, 64, 0.85)",
     padding: 15,
     borderRadius: 12,
     borderWidth: 1,

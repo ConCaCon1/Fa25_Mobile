@@ -346,7 +346,6 @@ const ProductDetailScreen = ({ route, navigation }) => {
           </View>
         </View>
 
-        {/* DETAILS */}
         <View style={styles.sectionCard}>
           <Text style={styles.sectionHeader}>Thông tin chi tiết</Text>
 
@@ -517,10 +516,10 @@ const ProductDetailScreen = ({ route, navigation }) => {
 
       {/* FOOTER ACTIONS */}
       <View style={styles.footer}>
-        <TouchableOpacity style={styles.chatButton}>
+        {/* <TouchableOpacity style={styles.chatButton}>
           <Ionicons name="chatbox-outline" size={24} color="#003d66" />
           <Text style={styles.chatButtonText}>Chat</Text>
-        </TouchableOpacity>
+        </TouchableOpacity> */}
 
         <View style={styles.verticalLine} />
 

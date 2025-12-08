@@ -157,27 +157,7 @@ const ShipDetailScreen = ({ route, navigation }) => {
           <InfoRow icon="local-activity" label="Register No" value={ship.registerNo} />
           <InfoRow icon="business" label="Build Year" value={ship.buildYear} />
 
-          {/* ➕ SHIP ID + NÚT COPY */}
-          <View style={styles.infoRow}>
-            <View style={styles.infoRowLabel}>
-              <Ionicons name="pricetag-outline" size={20} color="#003d66" />
-              <Text style={styles.infoLabelText}>Ship ID</Text>
-            </View>
-
-            <View style={styles.copyRow}>
-              <Text style={styles.copyText}>{ship.id}</Text>
-
-              <TouchableOpacity
-                style={styles.copyButton}
-                onPress={() => {
-                  Clipboard.setStringAsync(ship.id);
-                  Alert.alert("Copied!", "Ship ID đã được copy.");
-                }}
-              >
-                <Ionicons name="copy-outline" size={18} color="#fff" />
-              </TouchableOpacity>
-            </View>
-          </View>
+       
         </View>
 
         <View style={styles.infoCard}>
@@ -193,7 +173,6 @@ const ShipDetailScreen = ({ route, navigation }) => {
             }
           />
 
-          {/* CAPTAIN */}
           <View style={styles.infoRow}>
             <View style={styles.infoRowLabel}>
               <Ionicons name="person-outline" size={20} color="#003d66" />
@@ -315,7 +294,6 @@ const styles = StyleSheet.create({
     textAlign: "right",
   },
 
-  /* COPY SHIP ID */
   copyRow: {
     flexDirection: "row",
     alignItems: "center",

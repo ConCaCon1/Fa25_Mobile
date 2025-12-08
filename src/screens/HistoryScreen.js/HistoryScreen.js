@@ -81,7 +81,7 @@ const HistoryScreen = ({ navigation }) => {
     }).format(amount);
 
   const getPlaceholderImage = () =>
-    "https://png.pngtree.com/png-vector/20250728/ourlarge/pngtree-vintage-trawler-fishing-boat-vector-icon-element-png-image_16880913.webp";
+    "https://i.pinimg.com/736x/9e/3b/da/9e3bda55c3cbda1bbb6133db35ab2824.jpg";
 
   const renderBookingCard = (item) => {
     const statusInfo = getStatusConfig(item.status);
