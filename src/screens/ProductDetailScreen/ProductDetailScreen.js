@@ -19,7 +19,7 @@ import {
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 // Đảm bảo đường dẫn import này đúng với project của bạn
-import { apiGet, apiPost } from "../../ultis/api"; 
+import { apiGet, apiPost } from "../../ultis/api";
 
 const { width } = Dimensions.get("window");
 
@@ -44,18 +44,23 @@ const ProductDetailScreen = ({ route, navigation }) => {
 
   const [activeImageIndex, setActiveImageIndex] = useState(0);
 
+  // --- STATE CHO MODAL MUA HÀNG ---
   const [variantModalVisible, setVariantModalVisible] = useState(false);
   const [selectedVariantId, setSelectedVariantId] = useState("");
   const [quantity, setQuantity] = useState(1);
+  
+  // State mới: Lưu trữ các Modifier đã chọn (Ví dụ: { groupId: optionId })
+  const [selectedModifiers, setSelectedModifiers] = useState({});
 
+  // --- STATE CHO REVIEW ---
   const [reviews, setReviews] = useState([]);
   const [reviewModalVisible, setReviewModalVisible] = useState(false);
   const [userRating, setUserRating] = useState(5);
   const [userComment, setUserComment] = useState("");
   const [submittingReview, setSubmittingReview] = useState(false);
-
   const [filterType, setFilterType] = useState("ALL");
 
+  // --- API CALLS ---
   const fetchDetail = async () => {
     try {
       setLoading(true);
@@ -79,6 +84,87 @@ const ProductDetailScreen = ({ route, navigation }) => {
     }
   };
 
+  useEffect(() => {
+    fetchDetail();
+    fetchReviews();
+  }, []);
+
+  // --- LOGIC XỬ LÝ VARIANT & MODIFIER ---
+
+  // Lấy ra variant object hiện tại dựa trên ID đang chọn
+  const currentVariant = useMemo(() => {
+    if (!product || !selectedVariantId) return null;
+    return product.productVariants.find((v) => v.id === selectedVariantId);
+  }, [product, selectedVariantId]);
+
+  // Khi người dùng đổi Variant hoặc đóng Modal, reset lại các modifier đã chọn và số lượng
+  useEffect(() => {
+    setSelectedModifiers({});
+    // setQuantity(1); // Có thể bỏ comment nếu muốn reset số lượng về 1 khi đổi loại
+  }, [selectedVariantId, variantModalVisible]);
+
+  // Hàm chọn modifier
+  const handleSelectModifier = (groupId, optionId) => {
+    setSelectedModifiers((prev) => ({
+      ...prev,
+      [groupId]: optionId,
+    }));
+  };
+
+  const handleOrderNow = () => {
+    setVariantModalVisible(true);
+  };
+
+  // Logic nút "Xác nhận"
+  const handleConfirmSelection = () => {
+    if (!selectedVariantId) return;
+
+    // Kiểm tra xem Variant này có Modifier Group không (Ví dụ: Màu sắc)
+    // Nếu có, bắt buộc phải chọn hết các option
+    if (currentVariant?.modifierGroups && currentVariant.modifierGroups.length > 0) {
+        const missingGroup = currentVariant.modifierGroups.find(
+            (g) => !selectedModifiers[g.id]
+        );
+        if (missingGroup) {
+            Alert.alert("Thông báo", `Vui lòng chọn ${missingGroup.name}`);
+            return;
+        }
+    }
+
+    // Tạo chuỗi tên Modifier để hiển thị (VD: "Trắng, Size L")
+    let modifierNames = "";
+    if (currentVariant?.modifierGroups) {
+        modifierNames = currentVariant.modifierGroups
+            .map((g) => {
+                const selectedOpt = g.modifierOptions.find(
+                    (o) => o.id === selectedModifiers[g.id]
+                );
+                return selectedOpt ? selectedOpt.name : "";
+            })
+            .filter(name => name !== "")
+            .join(", ");
+    }
+
+    // Lấy danh sách ID các option đã chọn để gửi lên Server
+    const selectedModifierOptionIds = Object.values(selectedModifiers);
+
+    setVariantModalVisible(false);
+
+    // Chuyển sang màn hình Ship
+    navigation.navigate("SelectShipScreen", {
+      productId: product.id,
+      variantId: selectedVariantId,
+      variantName: currentVariant.name,
+      modifierNames: modifierNames,        // Tên hiển thị
+      modifierOptionIds: selectedModifierOptionIds, // ID để xử lý backend
+      quantity: quantity,
+      price: currentVariant.price,
+    });
+
+    setQuantity(1);
+  };
+
+  // --- REVIEW LOGIC ---
   const handleSubmitReview = async () => {
     if (!userComment.trim()) {
       Alert.alert("Thông báo", "Vui lòng nhập nội dung đánh giá");
@@ -125,26 +211,7 @@ const ProductDetailScreen = ({ route, navigation }) => {
     }
   };
 
-  useEffect(() => {
-    fetchDetail();
-    fetchReviews();
-  }, []);
-
-  const handleOrderNow = () => {
-    setVariantModalVisible(true);
-  };
-
-  useEffect(() => {
-    if (product && selectedVariantId) {
-      const exists = product.productVariants.some(
-        (v) => v.id === selectedVariantId
-      );
-      if (!exists) {
-        setSelectedVariantId("");
-      }
-    }
-  }, [product, selectedVariantId]);
-
+  // --- HELPERS HIỂN THỊ ---
   const priceDisplay = useMemo(() => {
     if (
       !product ||
@@ -185,24 +252,15 @@ const ProductDetailScreen = ({ route, navigation }) => {
 
   const filteredReviews = useMemo(() => {
     switch (filterType) {
-      case "ALL":
-        return reviews;
-      case "5":
-        return reviews.filter((r) => r.rating === 5);
-      case "4":
-        return reviews.filter((r) => r.rating === 4);
-      case "3":
-        return reviews.filter((r) => r.rating === 3);
-      case "2":
-        return reviews.filter((r) => r.rating === 2);
-      case "1":
-        return reviews.filter((r) => r.rating === 1);
-      case "COMMENT":
-        return reviews.filter((r) => r.comment && r.comment.trim() !== "");
-      case "MEDIA":
-        return [];
-      default:
-        return reviews;
+      case "ALL": return reviews;
+      case "5": return reviews.filter((r) => r.rating === 5);
+      case "4": return reviews.filter((r) => r.rating === 4);
+      case "3": return reviews.filter((r) => r.rating === 3);
+      case "2": return reviews.filter((r) => r.rating === 2);
+      case "1": return reviews.filter((r) => r.rating === 1);
+      case "COMMENT": return reviews.filter((r) => r.comment && r.comment.trim() !== "");
+      case "MEDIA": return [];
+      default: return reviews;
     }
   }, [reviews, filterType]);
 
@@ -212,6 +270,7 @@ const ProductDetailScreen = ({ route, navigation }) => {
     setActiveImageIndex(Math.round(index));
   };
 
+  // --- SUB-COMPONENTS RENDER ---
   const RenderStars = ({ rating, size = 14 }) => {
     const stars = [];
     for (let i = 1; i <= 5; i++) {
@@ -234,13 +293,7 @@ const ProductDetailScreen = ({ route, navigation }) => {
 
   const InteractiveStarRating = ({ rating, setRating }) => {
     return (
-      <View
-        style={{
-          flexDirection: "row",
-          justifyContent: "center",
-          marginBottom: 20,
-        }}
-      >
+      <View style={{ flexDirection: "row", justifyContent: "center", marginBottom: 20 }}>
         {[1, 2, 3, 4, 5].map((item) => (
           <TouchableOpacity
             key={item}
@@ -265,15 +318,14 @@ const ProductDetailScreen = ({ route, navigation }) => {
         style={[styles.filterBtn, isActive && styles.filterBtnActive]}
         onPress={() => setFilterType(type)}
       >
-        <Text
-          style={[styles.filterBtnText, isActive && styles.filterBtnTextActive]}
-        >
+        <Text style={[styles.filterBtnText, isActive && styles.filterBtnTextActive]}>
           {label} ({count})
         </Text>
       </TouchableOpacity>
     );
   };
 
+  // --- LOADING VIEW ---
   if (loading || !product) {
     return (
       <View style={styles.center}>
@@ -285,6 +337,7 @@ const ProductDetailScreen = ({ route, navigation }) => {
     );
   }
 
+  // --- MAIN RENDER ---
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
@@ -342,7 +395,6 @@ const ProductDetailScreen = ({ route, navigation }) => {
           <View style={styles.ratingRow}>
             <RenderStars rating={parseFloat(averageRating)} size={16} />
             <Text style={styles.ratingTextSmall}>{averageRating}/5 </Text>
-      
           </View>
         </View>
 
@@ -385,11 +437,11 @@ const ProductDetailScreen = ({ route, navigation }) => {
           <Text style={styles.description}>{product.description}</Text>
         </View>
 
-        {/* --- REVIEWS SECTION (NEW DESIGN) --- */}
+        {/* --- REVIEWS SECTION --- */}
         <View style={styles.sectionCard}>
           <Text style={styles.sectionHeader}>Đánh giá sản phẩm</Text>
 
-          {/* 1. Rating Overview (Score + Bars) */}
+          {/* 1. Rating Overview */}
           <View style={styles.ratingOverviewContainer}>
             <View style={styles.ratingBigBox}>
               <Text style={styles.ratingBigText}>{averageRating}</Text>
@@ -402,31 +454,14 @@ const ProductDetailScreen = ({ route, navigation }) => {
             </View>
 
             <View style={styles.ratingChartBox}>
-              <RatingProgressBar
-                star={5}
-                count={counts[5]}
-                total={counts.ALL}
-              />
-              <RatingProgressBar
-                star={4}
-                count={counts[4]}
-                total={counts.ALL}
-              />
-              <RatingProgressBar
-                star={3}
-                count={counts[3]}
-                total={counts.ALL}
-              />
-              <RatingProgressBar
-                star={2}
-                count={counts[2]}
-                total={counts.ALL}
-              />
-              <RatingProgressBar
-                star={1}
-                count={counts[1]}
-                total={counts.ALL}
-              />
+              {[5, 4, 3, 2, 1].map((star) => (
+                <RatingProgressBar
+                  key={star}
+                  star={star}
+                  count={counts[star]}
+                  total={counts.ALL}
+                />
+              ))}
             </View>
           </View>
 
@@ -489,9 +524,7 @@ const ProductDetailScreen = ({ route, navigation }) => {
                     <Text style={styles.reviewerName}>
                       {item.accountName || "Khách hàng ẩn danh"}
                     </Text>
-                    <View
-                      style={{ flexDirection: "row", alignItems: "center" }}
-                    >
+                    <View style={{ flexDirection: "row", alignItems: "center" }}>
                       <RenderStars rating={item.rating} size={12} />
                     </View>
                   </View>
@@ -499,9 +532,7 @@ const ProductDetailScreen = ({ route, navigation }) => {
                     {new Date(item.createdDate).toLocaleDateString("vi-VN")}
                   </Text>
                 </View>
-
                 <Text style={styles.reviewContent}>{item.comment}</Text>
-
                 <View style={styles.reviewFooter}>
                   <TouchableOpacity style={styles.helpfulBtn}>
                     <Ionicons name="thumbs-up-outline" size={14} color="#888" />
@@ -516,19 +547,13 @@ const ProductDetailScreen = ({ route, navigation }) => {
 
       {/* FOOTER ACTIONS */}
       <View style={styles.footer}>
-        {/* <TouchableOpacity style={styles.chatButton}>
-          <Ionicons name="chatbox-outline" size={24} color="#003d66" />
-          <Text style={styles.chatButtonText}>Chat</Text>
-        </TouchableOpacity> */}
-
         <View style={styles.verticalLine} />
-
         <TouchableOpacity style={styles.buyButton} onPress={handleOrderNow}>
           <Text style={styles.buyButtonText}>Mua Ngay</Text>
         </TouchableOpacity>
       </View>
 
-      {/* MODAL: VARIANT SELECTION */}
+      {/* --- MODAL: VARIANT SELECTION (ĐÃ CẬP NHẬT) --- */}
       <Modal
         animationType="slide"
         transparent={true}
@@ -539,84 +564,104 @@ const ProductDetailScreen = ({ route, navigation }) => {
           <View style={styles.centeredView}>
             <TouchableWithoutFeedback>
               <View style={styles.variantModalView}>
+                {/* Header Modal */}
                 <View style={styles.modalHeaderBar}>
                   <Text style={styles.modalTitle}>Chọn phân loại</Text>
-                  <TouchableOpacity
-                    onPress={() => setVariantModalVisible(false)}
-                  >
+                  <TouchableOpacity onPress={() => setVariantModalVisible(false)}>
                     <Ionicons name="close" size={24} color="#888" />
                   </TouchableOpacity>
                 </View>
 
-                <View
-                  style={{
-                    flexDirection: "row",
-                    marginBottom: 15,
-                    paddingBottom: 15,
-                    borderBottomWidth: 1,
-                    borderColor: "#EEE",
-                  }}
-                >
+                {/* Info Sản phẩm thu nhỏ */}
+                <View style={styles.modalProductInfo}>
                   <Image
                     source={{ uri: product.productImages[0]?.imageUrl }}
                     style={styles.modalProdImage}
                   />
-                  <View
-                    style={{ justifyContent: "flex-end", marginLeft: 10 }}
-                  >
+                  <View style={{ justifyContent: "flex-end", marginLeft: 10 }}>
                     <Text style={styles.modalPricePreview}>
-                      {selectedVariantId
-                        ? `${product.productVariants
-                            .find((v) => v.id === selectedVariantId)
-                            ?.price.toLocaleString()} ₫`
+                      {selectedVariantId && currentVariant
+                        ? `${currentVariant.price.toLocaleString()} ₫`
                         : priceDisplay}
                     </Text>
                     <Text style={{ color: "#666" }}>Kho: Sẵn hàng</Text>
                   </View>
                 </View>
 
-                <ScrollView style={{ maxHeight: 250 }}>
-                  {product.productVariants.map((variant) => (
-                    <TouchableOpacity
-                      key={variant.id}
-                      style={[
-                        styles.variantOption,
-                        selectedVariantId === variant.id &&
-                          styles.variantOptionSelected,
-                      ]}
-                      onPress={() => setSelectedVariantId(variant.id)}
-                    >
-                      <Text
+                <ScrollView style={{ maxHeight: 300 }}>
+                  {/* 1. Chọn Variant (Phân loại chính) */}
+                  <Text style={styles.optionTitle}>Phân loại:</Text>
+                  <View style={styles.variantListContainer}>
+                    {product.productVariants.map((variant) => (
+                      <TouchableOpacity
+                        key={variant.id}
                         style={[
-                          styles.variantName,
-                          selectedVariantId === variant.id && {
-                            color: "#003d66",
-                            fontWeight: "bold",
-                          },
+                          styles.variantOption,
+                          selectedVariantId === variant.id &&
+                            styles.variantOptionSelected,
                         ]}
+                        onPress={() => setSelectedVariantId(variant.id)}
                       >
-                        {variant.name}
-                      </Text>
-                    </TouchableOpacity>
-                  ))}
+                        <Text
+                          style={[
+                            styles.variantName,
+                            selectedVariantId === variant.id && {
+                              color: "#003d66",
+                              fontWeight: "bold",
+                            },
+                          ]}
+                        >
+                          {variant.name}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+
+                  {/* 2. Chọn Modifier (Màu sắc...) - Hiển thị khi đã chọn Variant */}
+                  {currentVariant &&
+                    currentVariant.modifierGroups &&
+                    currentVariant.modifierGroups.length > 0 && (
+                      <View style={{ marginTop: 5 }}>
+                        {currentVariant.modifierGroups.map((group) => (
+                          <View key={group.id} style={{ marginBottom: 10 }}>
+                            <Text style={styles.optionTitle}>{group.name}:</Text>
+                            <View style={{ flexDirection: "row", flexWrap: "wrap" }}>
+                              {group.modifierOptions.map((option) => {
+                                const isSelected = selectedModifiers[group.id] === option.id;
+                                return (
+                                  <TouchableOpacity
+                                    key={option.id}
+                                    style={[
+                                      styles.modifierOption,
+                                      isSelected && styles.modifierOptionSelected,
+                                    ]}
+                                    onPress={() => handleSelectModifier(group.id, option.id)}
+                                  >
+                                    <Text
+                                      style={[
+                                        styles.modifierText,
+                                        isSelected && styles.modifierTextSelected,
+                                      ]}
+                                    >
+                                      {option.name}
+                                    </Text>
+                                  </TouchableOpacity>
+                                );
+                              })}
+                            </View>
+                          </View>
+                        ))}
+                      </View>
+                    )}
                 </ScrollView>
 
+                {/* Số lượng */}
                 <View style={styles.quantityContainer}>
-                  <Text
-                    style={{
-                      fontSize: 16,
-                      fontWeight: "500",
-                      color: "#1C2A3A",
-                    }}
-                  >
-                    Số lượng
-                  </Text>
+                  <Text style={styles.quantityLabel}>Số lượng</Text>
                   <View style={styles.qtyBox}>
                     <TouchableOpacity
                       style={styles.qtyBtn}
-                      onPress={() =>
-                        setQuantity((q) => Math.max(1, q - 1))
-                      }
+                      onPress={() => setQuantity((q) => Math.max(1, q - 1))}
                     >
                       <Text style={{ fontSize: 18, color: "#003d66" }}>-</Text>
                     </TouchableOpacity>
@@ -630,26 +675,18 @@ const ProductDetailScreen = ({ route, navigation }) => {
                   </View>
                 </View>
 
+                {/* Nút Xác nhận */}
                 <TouchableOpacity
                   style={[
                     styles.confirmButton,
-                    !selectedVariantId && { backgroundColor: "#8CA2B1" },
+                    (!selectedVariantId ||
+                      // Kiểm tra xem đã chọn đủ modifier bắt buộc chưa
+                      (currentVariant?.modifierGroups?.length > 0 &&
+                        currentVariant.modifierGroups.some(
+                          (g) => !selectedModifiers[g.id]
+                        ))) && { backgroundColor: "#8CA2B1" },
                   ]}
-                  onPress={() => {
-                    if (selectedVariantId) {
-                      setVariantModalVisible(false);
-                      const selectedVariant = product.productVariants.find(
-                        (v) => v.id === selectedVariantId
-                      );
-                      navigation.navigate("SelectShipScreen", {
-                        productId: product.id,
-                        variantId: selectedVariantId,
-                        variantName: selectedVariant?.name || "",
-                        quantity: quantity,
-                      });
-                      setQuantity(1);
-                    }
-                  }}
+                  onPress={handleConfirmSelection}
                   disabled={!selectedVariantId}
                 >
                   <Text style={styles.confirmButtonText}>Xác nhận</Text>
@@ -660,7 +697,7 @@ const ProductDetailScreen = ({ route, navigation }) => {
         </TouchableWithoutFeedback>
       </Modal>
 
-      {/* MODAL: WRITE REVIEW */}
+      {/* MODAL: WRITE REVIEW (Giữ nguyên) */}
       <Modal
         animationType="fade"
         transparent={true}
@@ -677,22 +714,8 @@ const ProductDetailScreen = ({ route, navigation }) => {
                   rating={userRating}
                   setRating={setUserRating}
                 />
-                <Text
-                  style={{
-                    color: "#003d66",
-                    fontWeight: "bold",
-                    fontSize: 16,
-                  }}
-                >
-                  {userRating === 5
-                    ? "Tuyệt vời"
-                    : userRating === 4
-                    ? "Hài lòng"
-                    : userRating === 3
-                    ? "Bình thường"
-                    : userRating === 2
-                    ? "Không hài lòng"
-                    : "Tệ"}
+                <Text style={{ color: "#003d66", fontWeight: "bold", fontSize: 16 }}>
+                  {userRating === 5 ? "Tuyệt vời" : userRating === 4 ? "Hài lòng" : userRating === 3 ? "Bình thường" : userRating === 2 ? "Không hài lòng" : "Tệ"}
                 </Text>
               </View>
 
@@ -706,30 +729,16 @@ const ProductDetailScreen = ({ route, navigation }) => {
                 textAlignVertical="top"
               />
 
-              <View
-                style={{
-                  flexDirection: "row",
-                  justifyContent: "space-between",
-                  marginTop: 10,
-                }}
-              >
+              <View style={{ flexDirection: "row", justifyContent: "space-between", marginTop: 10 }}>
                 <TouchableOpacity
-                  style={[
-                    styles.modalButtonSmall,
-                    { backgroundColor: "#F2F2F2" },
-                  ]}
+                  style={[styles.modalButtonSmall, { backgroundColor: "#F2F2F2" }]}
                   onPress={() => setReviewModalVisible(false)}
                 >
-                  <Text style={[styles.textSmallBtn, { color: "#666" }]}>
-                    Hủy
-                  </Text>
+                  <Text style={[styles.textSmallBtn, { color: "#666" }]}>Hủy</Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
-                  style={[
-                    styles.modalButtonSmall,
-                    { backgroundColor: "#003d66" },
-                  ]}
+                  style={[styles.modalButtonSmall, { backgroundColor: "#003d66" }]}
                   onPress={handleSubmitReview}
                   disabled={submittingReview}
                 >
@@ -763,9 +772,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
     elevation: 2,
   },
-  iconButton: {
-    padding: 5,
-  },
+  iconButton: { padding: 5 },
   headerTitle: {
     fontSize: 18,
     fontWeight: "600",
@@ -817,19 +824,8 @@ const styles = StyleSheet.create({
     color: "#003d66",
     marginBottom: 8,
   },
-  ratingRow: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  ratingTextSmall: {
-    fontSize: 13,
-    color: "#1C2A3A",
-    marginLeft: 5,
-  },
-  soldText: {
-    fontSize: 13,
-    color: "#777",
-  },
+  ratingRow: { flexDirection: "row", alignItems: "center" },
+  ratingTextSmall: { fontSize: 13, color: "#1C2A3A", marginLeft: 5 },
 
   sectionHeader: {
     fontSize: 16,
@@ -837,11 +833,7 @@ const styles = StyleSheet.create({
     color: "#1C2A3A",
     marginBottom: 12,
   },
-  infoRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingVertical: 8,
-  },
+  infoRow: { flexDirection: "row", alignItems: "center", paddingVertical: 8 },
   infoIconBox: {
     width: 32,
     height: 32,
@@ -851,15 +843,8 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     marginRight: 12,
   },
-  infoLabel: {
-    fontSize: 12,
-    color: "#5A6A7D",
-  },
-  infoValue: {
-    fontSize: 15,
-    color: "#1C2A3A",
-    fontWeight: "500",
-  },
+  infoLabel: { fontSize: 12, color: "#5A6A7D" },
+  infoValue: { fontSize: 15, color: "#1C2A3A", fontWeight: "500" },
   divider: {
     height: 1,
     backgroundColor: "#E9EFF5",
@@ -880,7 +865,7 @@ const styles = StyleSheet.create({
     textAlign: "justify",
   },
 
-  // --- STYLES REVIEW MỚI ---
+  // --- REVIEW STYLES ---
   ratingOverviewContainer: {
     flexDirection: "row",
     alignItems: "center",
@@ -899,25 +884,14 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     color: "#003d66",
   },
-  ratingTotalText: {
-    fontSize: 12,
-    color: "#888",
-  },
-  ratingChartBox: {
-    flex: 1,
-    paddingLeft: 20,
-    justifyContent: "center",
-  },
+  ratingTotalText: { fontSize: 12, color: "#888" },
+  ratingChartBox: { flex: 1, paddingLeft: 20, justifyContent: "center" },
   progressBarRow: {
     flexDirection: "row",
     alignItems: "center",
     marginBottom: 4,
   },
-  starLabel: {
-    fontSize: 12,
-    color: "#555",
-    width: 35,
-  },
+  starLabel: { fontSize: 12, color: "#555", width: 35 },
   progressBarTrack: {
     flex: 1,
     height: 6,
@@ -945,9 +919,7 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     marginTop: 5,
   },
-  filterContainer: {
-    paddingBottom: 8,
-  },
+  filterContainer: { paddingBottom: 8 },
   filterBtn: {
     paddingVertical: 8,
     paddingHorizontal: 16,
@@ -962,18 +934,9 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 1,
   },
-  filterBtnActive: {
-    borderColor: "#003d66",
-    backgroundColor: "#F0F8FF",
-  },
-  filterBtnText: {
-    fontSize: 13,
-    color: "#5A6A7D",
-  },
-  filterBtnTextActive: {
-    color: "#003d66",
-    fontWeight: "700",
-  },
+  filterBtnActive: { borderColor: "#003d66", backgroundColor: "#F0F8FF" },
+  filterBtnText: { fontSize: 13, color: "#5A6A7D" },
+  filterBtnTextActive: { color: "#003d66", fontWeight: "700" },
 
   reviewListHeader: {
     flexDirection: "row",
@@ -982,224 +945,204 @@ const styles = StyleSheet.create({
     marginBottom: 15,
     marginTop: 10,
   },
-  reviewListTitle: {
-    fontSize: 16,
-    fontWeight: "bold",
-    color: "#1C2A3A",
-  },
-  writeReviewLink: {
-    color: "#003d66",
-    fontSize: 14,
-    textDecorationLine: "underline",
-  },
+  reviewListTitle: { fontSize: 16, fontWeight: "bold", color: "#1C2A3A" },
+  writeReviewLink: { fontSize: 14, color: "#003d66", fontWeight: "600" },
 
   emptyReviewContainer: {
     alignItems: "center",
-    paddingVertical: 30,
-  },
-  noReviewText: {
-    color: "#888",
+    padding: 20,
     marginTop: 10,
   },
+  noReviewText: { color: "#999", marginTop: 10 },
 
   reviewCard: {
-    backgroundColor: "#FFF",
-    marginBottom: 16,
-    paddingBottom: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: "#F0F0F0",
+    backgroundColor: "#F9F9F9",
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 12,
   },
-  reviewCardHeader: {
-    flexDirection: "row",
-    marginBottom: 8,
-  },
+  reviewCardHeader: { flexDirection: "row", marginBottom: 8 },
   avatarContainer: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: "#E1F5FE",
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: "#DDD",
     alignItems: "center",
     justifyContent: "center",
-    marginRight: 12,
-    borderWidth: 1,
-    borderColor: "#FFF",
+    marginRight: 10,
   },
-  avatarText: { fontWeight: "bold", color: "#003d66" },
-  reviewerName: {
-    fontSize: 14,
-    fontWeight: "600",
-    marginBottom: 2,
-    color: "#1C2A3A",
-  },
-  reviewDate: { fontSize: 11, color: "#888" },
-  reviewContent: {
-    fontSize: 14,
-    color: "#333",
-    lineHeight: 21,
-    marginBottom: 8,
-  },
-  reviewFooter: {
-    flexDirection: "row",
-  },
-  helpfulBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  helpfulText: {
-    marginLeft: 4,
-    fontSize: 12,
-    color: "#888",
-  },
+  avatarText: { fontWeight: "bold", color: "#555" },
+  reviewerName: { fontWeight: "bold", color: "#333", fontSize: 14 },
+  reviewDate: { fontSize: 12, color: "#888" },
+  reviewContent: { fontSize: 14, color: "#444", lineHeight: 20 },
+  reviewFooter: { marginTop: 8 },
+  helpfulBtn: { flexDirection: "row", alignItems: "center" },
+  helpfulText: { fontSize: 12, color: "#888", marginLeft: 4 },
 
-  // --- FOOTER & MODALS ---
+  // --- FOOTER ---
   footer: {
     position: "absolute",
     bottom: 0,
-    left: 0,
-    right: 0,
+    width: "100%",
     backgroundColor: "#fff",
     flexDirection: "row",
     alignItems: "center",
-    paddingVertical: 8,
-    paddingHorizontal: 12,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
     borderTopWidth: 1,
-    borderTopColor: "#E9EFF5",
+    borderColor: "#EEE",
     elevation: 10,
-    shadowColor: "#003d66",
-    shadowOffset: { width: 0, height: -2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
   },
-  chatButton: {
-    alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: 12,
-  },
-  chatButtonText: {
-    fontSize: 10,
-    color: "#555",
-    marginTop: 2,
-  },
-  verticalLine: {
-    width: 1,
-    height: 24,
-    backgroundColor: "#DDD",
-  },
+  verticalLine: { width: 1, height: 30, backgroundColor: "#DDD", marginHorizontal: 15 },
   buyButton: {
     flex: 1,
     backgroundColor: "#003d66",
-    borderRadius: 4,
-    paddingVertical: 10,
-    marginLeft: 10,
+    paddingVertical: 12,
+    borderRadius: 8,
     alignItems: "center",
-    justifyContent: "center",
   },
-  buyButtonText: {
-    color: "#fff",
-    fontWeight: "bold",
-    fontSize: 16,
-  },
+  buyButtonText: { color: "#fff", fontSize: 16, fontWeight: "bold" },
 
+  // --- MODAL STYLES (CẬP NHẬT & BỔ SUNG) ---
   centeredView: {
     flex: 1,
     justifyContent: "flex-end",
     backgroundColor: "rgba(0,0,0,0.5)",
   },
   variantModalView: {
-    backgroundColor: "#fff",
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
+    backgroundColor: "white",
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
     padding: 16,
-    minHeight: 400,
+    width: "100%",
+    maxHeight: "80%", // Giới hạn chiều cao modal
   },
   modalHeaderBar: {
     flexDirection: "row",
     justifyContent: "space-between",
+    alignItems: "center",
     marginBottom: 15,
   },
-  modalTitle: { fontSize: 16, fontWeight: "bold", color: "#1C2A3A" },
+  modalTitle: { fontSize: 18, fontWeight: "bold", color: "#1C2A3A" },
+  modalProductInfo: {
+    flexDirection: "row",
+    marginBottom: 15,
+    paddingBottom: 15,
+    borderBottomWidth: 1,
+    borderColor: "#EEE",
+  },
   modalProdImage: {
     width: 80,
     height: 80,
-    borderRadius: 4,
-    backgroundColor: "#EEE",
+    borderRadius: 8,
+    backgroundColor: "#f0f0f0",
   },
-  modalPricePreview: { fontSize: 18, color: "#003d66", fontWeight: "bold" },
-
-  variantOption: {
-    padding: 10,
-    backgroundColor: "#F2F6FA",
-    borderRadius: 4,
+  modalPricePreview: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#E53935",
+  },
+  
+  // Style cho Variant & Modifiers
+  optionTitle: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#1C2A3A",
     marginBottom: 8,
-    marginRight: 10,
+    marginTop: 4,
   },
-  variantOptionSelected: {
-    backgroundColor: "#E1F5FE",
-    borderColor: "#003d66",
+  variantListContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginBottom: 10,
+  },
+  variantOption: {
+    paddingVertical: 8,
+    paddingHorizontal: 12,
     borderWidth: 1,
+    borderColor: "#DDD",
+    borderRadius: 8,
+    marginRight: 10,
+    marginBottom: 10,
   },
-  variantName: { fontSize: 14, color: "#1C2A3A" },
+  variantOptionSelected: { borderColor: "#003d66", backgroundColor: "#E6F0F5" },
+  variantName: { fontSize: 14, color: "#333" },
 
+  // Modifier styles (Mới)
+  modifierOption: {
+    paddingVertical: 6,
+    paddingHorizontal: 14,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: "#E0E0E0",
+    marginRight: 10,
+    marginBottom: 8,
+    backgroundColor: "#FAFAFA",
+  },
+  modifierOptionSelected: {
+    borderColor: "#003d66",
+    backgroundColor: "#E6F0F5",
+  },
+  modifierText: {
+    fontSize: 13,
+    color: "#333",
+  },
+  modifierTextSelected: {
+    color: "#003d66",
+    fontWeight: "600",
+  },
+
+  // Quantity styles
   quantityContainer: {
     flexDirection: "row",
-    justifyContent: "space-between",
     alignItems: "center",
-    marginTop: 20,
+    justifyContent: "space-between",
+    marginTop: 15,
     marginBottom: 20,
   },
-  qtyBox: {
-    flexDirection: "row",
-    borderWidth: 1,
-    borderColor: "#E9EFF5",
-    borderRadius: 4,
-  },
-  qtyBtn: {
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    backgroundColor: "#F9F9F9",
-  },
-  qtyText: {
-    paddingHorizontal: 15,
-    paddingVertical: 4,
-    fontSize: 16,
-    fontWeight: "500",
-    color: "#1C2A3A",
-  },
+  quantityLabel: { fontSize: 16, fontWeight: "500", color: "#1C2A3A" },
+  qtyBox: { flexDirection: "row", alignItems: "center", borderWidth: 1, borderColor: "#DDD", borderRadius: 4 },
+  qtyBtn: { paddingHorizontal: 12, paddingVertical: 5, backgroundColor: "#F9F9F9" },
+  qtyText: { paddingHorizontal: 15, fontSize: 16, fontWeight: "500", color: "#333" },
 
   confirmButton: {
     backgroundColor: "#003d66",
-    padding: 12,
-    borderRadius: 4,
+    paddingVertical: 14,
+    borderRadius: 8,
     alignItems: "center",
   },
-  confirmButtonText: { color: "#fff", fontWeight: "bold", fontSize: 16 },
+  confirmButtonText: { color: "#fff", fontSize: 16, fontWeight: "bold" },
 
+  // --- REVIEW MODAL STYLES (BASIC) ---
   centeredViewBasic: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
     backgroundColor: "rgba(0,0,0,0.5)",
-  },
-  reviewModalView: {
-    width: "85%",
-    backgroundColor: "#fff",
-    borderRadius: 12,
     padding: 20,
   },
+  reviewModalView: {
+    width: "100%",
+    backgroundColor: "white",
+    borderRadius: 12,
+    padding: 20,
+    elevation: 5,
+  },
   reviewInput: {
-    backgroundColor: "#FAFAFA",
-    borderRadius: 8,
-    padding: 12,
     borderWidth: 1,
-    borderColor: "#E9EFF5",
+    borderColor: "#DDD",
+    borderRadius: 8,
+    padding: 10,
     height: 100,
-    color: "#1C2A3A",
+    marginBottom: 15,
+    fontSize: 14,
   },
   modalButtonSmall: {
-    flex: 0.48,
-    padding: 10,
-    borderRadius: 6,
+    flex: 1,
+    paddingVertical: 10,
+    borderRadius: 8,
     alignItems: "center",
+    marginHorizontal: 5,
   },
-  textSmallBtn: { fontWeight: "600", color: "#fff" },
+  textSmallBtn: { fontSize: 14, color: "#fff", fontWeight: "600" },
 });
