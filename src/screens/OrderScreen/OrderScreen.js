@@ -138,7 +138,6 @@ const renderItem = ({ item }) => {
         <View style={styles.divider} />
 
         <View style={styles.cardBody}>
-          {/* Dòng 1: Tên Xưởng (Mới thêm) */}
           <View style={styles.infoRow}>
             <View style={styles.rowLeft}>
               <MaterialCommunityIcons name="storefront-outline" size={16} color="#8898AA" />
@@ -198,12 +197,19 @@ const renderItem = ({ item }) => {
       <StatusBar barStyle="dark-content" backgroundColor="#F7F9FC" />
       
       <View style={styles.headerSection}>
-        <View style={styles.headerTitleRow}>
-          <View>
-            <Text style={styles.headerTitle}>Đơn hàng</Text>
-            <Text style={styles.headerSubtitle}>Quản lý danh sách đặt hàng</Text>
-          </View>
-        </View>
+      <View style={styles.headerTitleRow}>
+  <View>
+    <Text style={styles.headerTitle}>Đơn hàng</Text>
+    <Text style={styles.headerSubtitle}>Quản lý danh sách đặt hàng</Text>
+  </View>
+  
+  <TouchableOpacity 
+    style={styles.historyButton}
+    onPress={() => navigation.navigate("TransactionHistoryScreen")} 
+  >
+    <MaterialCommunityIcons name="clock-time-three-outline" size={24} color="#003d66" />
+  </TouchableOpacity>
+</View>
 
         <View style={styles.filterBar}>
          <View style={styles.searchContainer}>
@@ -407,4 +413,12 @@ const styles = StyleSheet.create({
   filterOptionActive: { backgroundColor: '#003d66', borderColor: '#003d66' },
   filterOptionText: { fontSize: 16, color: '#4A5568', fontWeight: '600' },
   filterOptionTextActive: { color: '#fff' },
+  historyButton: {
+    width: 44,
+    height: 44,
+    backgroundColor: "#E6F0F9",
+    borderRadius: 12,
+    justifyContent: "center",
+    alignItems: "center",
+  },
 });

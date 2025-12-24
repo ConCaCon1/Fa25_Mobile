@@ -42,6 +42,7 @@ import ProblemHistoryScreen from "../screens/ProblemHistoryScreen/ProblemHistory
 import ReportProblemDetailScreen from "../screens/ReportProblemDetailScreen/ReportProblemDetailScreen";
 import ShipProblemScreen from "../screens/ShipProblemScreen/ShipProblemScreen";
 import ChatAIScreen from "../screens/ChatAIScreen/ChatAIScreen";
+import TransactionHistoryScreen from "../screens/TransactionHistoryScreen/TransactionHistoryScreen";
 
 const Stack = createNativeStackNavigator();
 
@@ -94,6 +95,7 @@ export default function AppNavigator() {
         <Stack.Screen name="ReportProblemDetail" component={ReportProblemDetailScreen} />
         <Stack.Screen name="ShipProblem" component={ShipProblemScreen} />
         <Stack.Screen name="ChatAIScreen" component={ChatAIScreen} />
+        <Stack.Screen name="TransactionHistoryScreen" component={TransactionHistoryScreen} />
         <Stack.Screen
           name="CaptainAccount"
           children={(props) => (
