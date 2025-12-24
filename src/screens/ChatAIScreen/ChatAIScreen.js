@@ -55,7 +55,6 @@ const ChatAIScreen = ({ navigation }) => {
     setIsLoading(true);
 
     try {
-      // 2. Gọi API trực tiếp (Fetch)
       const response = await fetch("https://marine-bridge.harmon.love:18443/chat", {
         method: "POST",
         headers: {
@@ -63,7 +62,7 @@ const ChatAIScreen = ({ navigation }) => {
           "accept": "application/json"
         },
         body: JSON.stringify({
-          prompt: currentQuery // Truyền key "prompt" theo yêu cầu
+          prompt: currentQuery 
         }),
       });
 
@@ -74,13 +73,10 @@ const ChatAIScreen = ({ navigation }) => {
       const data = await response.json();
       console.log("Response Data:", data);
 
-      // 3. Tạo tin nhắn AI từ response trả về
       const aiMsg = {
         id: (Date.now() + 1).toString(),
         type: "ai",
-        // Lấy text từ "promptResponse"
         text: data.promptResponse || "Xin lỗi, tôi không tìm thấy thông tin.",
-        // Lấy mảng sản phẩm từ "products"
         products: data.products || [], 
       };
 
@@ -96,19 +92,16 @@ const ChatAIScreen = ({ navigation }) => {
       setMessages((prev) => [...prev, errorMsg]);
     } finally {
       setIsLoading(false);
-      // Cuộn xuống dưới cùng sau khi render xong
       setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
     }
   };
 
-  // --- Render từng thẻ sản phẩm nhỏ ---
   const renderProductItem = (product) => (
     <TouchableOpacity 
-      key={product.Id} // Lưu ý: API trả về Id viết hoa
+      key={product.Id} 
       style={styles.productSuggestion}
       onPress={() => {
-        // Điều hướng sang chi tiết sản phẩm nếu có màn hình đó
-        // navigation.navigate("ProductDetailScreen", { id: product.Id });
+        navigation.navigate("ProductDetailScreen", { id: product.Id });
         console.log("Xem chi tiết:", product.Name);
       }}
     >
@@ -130,7 +123,6 @@ const ChatAIScreen = ({ navigation }) => {
     </TouchableOpacity>
   );
 
-  // --- Render từng dòng tin nhắn (User hoặc AI) ---
   const renderMessage = ({ item }) => {
     const isUser = item.type === "user";
     
@@ -147,7 +139,6 @@ const ChatAIScreen = ({ navigation }) => {
             {item.text}
           </Text>
 
-          {/* Nếu tin nhắn AI có kèm danh sách products thì hiển thị bên dưới */}
           {!isUser && item.products && item.products.length > 0 && (
             <View style={styles.productContainer}>
               <View style={styles.divider} />
@@ -162,7 +153,6 @@ const ChatAIScreen = ({ navigation }) => {
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={{padding: 5}}>
           <Ionicons name="arrow-back" size={24} color={COLORS.primary} />
@@ -171,7 +161,6 @@ const ChatAIScreen = ({ navigation }) => {
         <View style={{ width: 34 }} /> 
       </View>
 
-      {/* Danh sách tin nhắn */}
       <FlatList
         ref={flatListRef}
         data={messages}
@@ -181,15 +170,13 @@ const ChatAIScreen = ({ navigation }) => {
         onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
       />
 
-      {/* Loading Indicator khi đang chờ AI */}
       {isLoading && (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="small" color={COLORS.secondary} />
-          <Text style={styles.loadingText}>Đang tìm kiếm sản phẩm phù hợp...</Text>
+          <Text style={styles.loadingText}>Đang tìm kiếm câu trả lời phù hợp...</Text>
         </View>
       )}
 
-      {/* Input Chat */}
       <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined}>
         <View style={styles.inputContainer}>
           <TextInput
@@ -258,7 +245,6 @@ const styles = StyleSheet.create({
   userText: { color: "#fff" },
   aiText: { color: COLORS.textDark },
 
-  // Styles cho phần Sản phẩm gợi ý
   productContainer: { marginTop: 10 },
   divider: { height: 1, backgroundColor: "#E2E8F0", marginVertical: 10 },
   productHeader: { fontSize: 13, fontWeight: "700", color: COLORS.secondary, marginBottom: 8, textTransform: "uppercase" },
@@ -281,7 +267,6 @@ const styles = StyleSheet.create({
   productSuggestDesc: { fontSize: 12, color: COLORS.textMedium },
   variantTag: { fontSize: 10, color: COLORS.secondary, marginTop: 4, fontWeight: "600" },
 
-  // Input area
   inputContainer: {
     flexDirection: "row",
     padding: 12,
@@ -295,7 +280,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#F1F5F9",
     borderRadius: 24,
     paddingHorizontal: 16,
-    paddingTop: 10, paddingBottom: 10, // cho multiline đẹp hơn
+    paddingTop: 10, paddingBottom: 10, 
     marginRight: 10,
     maxHeight: 100,
     fontSize: 15,
@@ -307,7 +292,6 @@ const styles = StyleSheet.create({
     justifyContent: "center", alignItems: "center",
   },
 
-  // Loading
   loadingContainer: { flexDirection: "row", padding: 10, alignItems: "center", marginLeft: 50 },
   loadingText: { marginLeft: 10, fontSize: 13, color: COLORS.textMedium, fontStyle: "italic" },
 });

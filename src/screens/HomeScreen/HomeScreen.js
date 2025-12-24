@@ -407,13 +407,17 @@ const HomeScreen = ({ navigation }) => {
           />
         </TouchableOpacity>
       </ScrollView>
-<TouchableOpacity 
-  style={styles.chatFab} 
-  onPress={() => navigation.navigate("ChatAIScreen")}
->
-  <MaterialCommunityIcons name="robot-happy-outline" size={30} color="#fff" />
-  <View style={styles.onlineBadge} />
-</TouchableOpacity>
+      <TouchableOpacity
+        style={styles.chatFab}
+        onPress={() => navigation.navigate("ChatAIScreen")}
+      >
+        <MaterialCommunityIcons
+          name="robot-happy-outline"
+          size={30}
+          color="#fff"
+        />
+        <View style={styles.onlineBadge} />
+      </TouchableOpacity>
       <BottomNavBar activeScreen="Home" navigation={navigation} />
     </SafeAreaView>
   );
@@ -624,31 +628,31 @@ const styles = StyleSheet.create({
     zIndex: 1,
   },
   chatFab: {
-  position: 'absolute',
-  right: 20,
-  bottom: 100, // Nằm trên Bottom Bar
-  backgroundColor: COLORS.secondary,
-  width: 56,
-  height: 56,
-  borderRadius: 28,
-  justifyContent: 'center',
-  alignItems: 'center',
-  elevation: 5,
-  shadowColor: '#000',
-  shadowOffset: { width: 0, height: 2 },
-  shadowOpacity: 0.25,
-  shadowRadius: 3.84,
-  zIndex: 10,
-},
-onlineBadge: {
-  position: 'absolute',
-  right: 2,
-  top: 2,
-  width: 12,
-  height: 12,
-  borderRadius: 6,
-  backgroundColor: '#4CAF50',
-  borderWidth: 2,
-  borderColor: '#fff',
-},
+    position: "absolute",
+    right: 20,
+    bottom: 100, // Nằm trên Bottom Bar
+    backgroundColor: COLORS.secondary,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    justifyContent: "center",
+    alignItems: "center",
+    elevation: 5,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    zIndex: 10,
+  },
+  onlineBadge: {
+    position: "absolute",
+    right: 2,
+    top: 2,
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: "#4CAF50",
+    borderWidth: 2,
+    borderColor: "#fff",
+  },
 });
